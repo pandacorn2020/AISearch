@@ -24,10 +24,10 @@ public class GraphSearch {
     @Autowired
     private LLMModel llmModel;
 
-    public static final int RELATIONSHIP_MAX_SIZE = 64;
-    public static final int DOC_SEGMENT_MAX_SIZE = 3;
+    public static final int RELATIONSHIP_MAX_SIZE = 128;
+    public static final int DOC_SEGMENT_MAX_SIZE = 6;
 
-    public static final int ENTITY_MAX_SIZE = 32;
+    public static final int ENTITY_MAX_SIZE = 64;
 
     private Map<String, KGGraph> graphMap = new HashMap<>();
 
