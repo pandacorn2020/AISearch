@@ -1,1 +1,7 @@
 /.idea/
+.idea/
+target/
+*.zip
+nbactions.xml
+nbproject/
+out0.txt
