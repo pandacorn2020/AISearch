@@ -8,7 +8,7 @@ import java.time.Duration;
 
 public class ApiClient {
 
-    public static final String API_URL = "http://localhost:8080/api/kg/buildAllGraphs";
+    public static final String API_URL = "http://localhost:8080/api/kg/buildGraph";
     public static final String SCHEMAS_API_URL = "http://localhost:8080/initialize-schemas";
 
     private String url;

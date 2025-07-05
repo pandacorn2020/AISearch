@@ -25,9 +25,9 @@ public class ServerController {
         return null;
     }
 
-    @PostMapping("/buildAllGraphs")
-    public String buildAllGraphs() {
-        graphBuilder.buildAllGraphs();
+    @PostMapping("/buildGraph")
+    public String buildGraph() {
+        graphBuilder.buildGraph();
         return "success";
     }
 
