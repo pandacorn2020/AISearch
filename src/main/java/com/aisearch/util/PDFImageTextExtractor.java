@@ -71,7 +71,7 @@ public class PDFImageTextExtractor {
     }
 
     public static void main(String[] args) throws IOException {
-        String pdfPath = "/input/input5.pdf";
+        String pdfPath = "/input/input6.pdf";
         String outputDir = "/output/";
 
         new File(outputDir).mkdirs();
