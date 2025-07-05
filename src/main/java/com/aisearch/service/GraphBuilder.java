@@ -1,5 +1,6 @@
 package com.aisearch.service;
 
+import com.aisearch.config.KgProperties;
 import com.google.common.base.Stopwatch;
 import com.aisearch.entity.KGGraph;
 import com.aisearch.entity.KGSegment;
@@ -21,6 +22,7 @@ import java.io.BufferedReader;
 import java.io.StringReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -28,6 +30,9 @@ import java.util.concurrent.*;
 @Service
 public class GraphBuilder {
     private static final Logger logger = LoggerFactory.getLogger(GraphBuilder.class.getSimpleName());
+
+    @Autowired
+    private KgProperties kgProperties;
 
     private final LLMModel llmModel;
     private final DocumentLoader documentLoader;
@@ -72,17 +77,10 @@ public class GraphBuilder {
     private void initGraphs() {
     }
 
-    public void buildAllGraphs() {
-        for (String schema : Schemas.allSchemas()) {
-            buildGraph(schema);
-        }
-    }
-
     @Transactional
-    public void buildGraph(String schema) {
-        logger.info("Building knowledge graph for schema: {}", schema);
-        String directoryName = Schemas.getSchemaDir(schema);
-        buildGraph(schema, directoryName);
+    public void buildGraph() {
+        String directoryName = kgProperties.getInputDir();
+        buildGraph("DOCS", directoryName);
     }
 
 
@@ -141,13 +139,13 @@ public class GraphBuilder {
     }
 
     public void buildEBMGraph() {
-        String directoryName = "docs";
+        String directoryName = "/docs";
         buildGraph(Schemas.DOCS, directoryName);
     }
 
     private void buildGraph(String schemaName, String directoryName) {
         try {
-            Path path = FileConverter.getResourcePath(directoryName);
+            Path path = Paths.get(directoryName);
             buildGraph(schemaName, path);
         } catch (Throwable t) {
             logger.error("Failed to build graph for " + schemaName, t);
