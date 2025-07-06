@@ -20,10 +20,6 @@ public class ServerController {
         return null;
     }
 
-    @PostMapping("/buildGraph")
-    public String buildGraph(@RequestBody String schemaName) {
-        return null;
-    }
 
     @PostMapping("/buildGraph")
     public String buildGraph() {
