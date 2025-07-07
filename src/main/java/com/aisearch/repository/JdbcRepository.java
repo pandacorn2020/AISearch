@@ -1,6 +1,7 @@
 package com.aisearch.repository;
 
 import com.aisearch.entity.*;
+import com.aisearch.service.Schemas;
 import com.aisearch.util.TextSimilarity;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -320,8 +321,9 @@ public class JdbcRepository {
         }
     }
 
-    public KGImage findKGImageById(String schema, long id) {
+    public KGImage findKGImageById(long id) {
         try {
+            String schema = Schemas.DOCS;
             String sql = String.format("SELECT * FROM %s.kgimage WHERE id = ?", schema);
             return jdbcTemplate.queryForObject(sql, noScoreKgImageRowMapper, id);
         } catch (Exception e) {
@@ -335,14 +337,14 @@ public class JdbcRepository {
             List<KGImage> images = jdbcTemplate.query(sql, kgImageRowMapper, description);
             if (images.isEmpty()) {
                 for (String entity : entities) {
-                    sql = String.format("SELECT * FROM %s.kgimage WHERE description contains ?", schema);
-                    List<KGImage> entityImages = jdbcTemplate.query(sql, kgImageRowMapper, entity);
+                    sql = String.format("SELECT * FROM %s.kgimage WHERE description contains ? top 1", schema);
+                    List<KGImage> entityImages = jdbcTemplate.query(sql, noScoreKgImageRowMapper, entity);
                     images.addAll(entityImages);
                 }
                 List<ScoreImage> scoreImages = new ArrayList<>();
                 for (KGImage image : images) {
                     double score = TextSimilarity.getSimilarity(description, image.getDescription());
-                    if (score > KG_IMAGE_SCORE) {
+                    if (score > KG_IMAGE_SCORE_LOW) {
                         scoreImages.add(new ScoreImage(score, image));
                     }
                 }
@@ -406,6 +408,7 @@ public class JdbcRepository {
     public static final float KG_RELATION_SHIP_SCORE = 0.50f;
 
     public static final float KG_IMAGE_SCORE = 0.90f;
+    public static final float KG_IMAGE_SCORE_LOW = 0.85f;
 
     static class ScoreImage implements Comparable<ScoreImage> {
         @Override

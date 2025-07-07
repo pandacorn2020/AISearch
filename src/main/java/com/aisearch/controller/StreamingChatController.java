@@ -1,5 +1,6 @@
 package com.aisearch.controller;
 
+import com.aisearch.repository.JdbcRepository;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
@@ -98,6 +99,9 @@ public class StreamingChatController {
 
     @Autowired
     private DocumentLoader documentLoader;
+
+    @Autowired
+    private JdbcRepository jdbcRepository;
 
 
     interface Assistant {
