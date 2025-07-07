@@ -1,6 +1,8 @@
 package com.aisearch.util;
 
-import com.aisearch.service.GraphSearch;
+import com.aisearch.entity.KGImage;
+import com.aisearch.repository.JdbcRepository;
+import com.aisearch.service.Schemas;
 import org.apache.pdfbox.cos.COSBase;
 import org.apache.pdfbox.cos.COSName;
 import org.apache.pdfbox.pdmodel.graphics.PDXObject;
@@ -14,13 +16,8 @@ import org.apache.pdfbox.contentstream.PDFStreamEngine;
 
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
-import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.*;
-import java.util.stream.Collectors;
 
 import org.apache.pdfbox.contentstream.operator.state.Concatenate;
 import org.apache.pdfbox.contentstream.operator.state.Restore;
@@ -45,7 +42,13 @@ public class PDFImageProcessEngine extends PDFStreamEngine
     private List<TextPosition> pageTextPositions;
     private int pageIndex;
 
+    private int pageCount;
+
     private float pageHeight;
+
+    private JdbcRepository jdbcRepository;
+
+    private String pageText;
 
     /**
      * Default constructor.
@@ -53,12 +56,18 @@ public class PDFImageProcessEngine extends PDFStreamEngine
      * @throws IOException If there is an error loading text stripper properties.
      */
     public PDFImageProcessEngine(int pageIndex,
+                                 int pageCount,
                                  float pageHeight,
-                                 List<TextPosition> pageTextPositions) throws IOException
+                                 List<TextPosition> pageTextPositions,
+                                 String pageText,
+                                 JdbcRepository jdbcRepository) throws IOException
     {
         this.pageIndex = pageIndex;
+        this.pageCount = pageCount;
         this.pageHeight = pageHeight;
         this.pageTextPositions = pageTextPositions;
+        this.pageText = pageText;
+        this.jdbcRepository = jdbcRepository;
         addOperator(new Concatenate());
         addOperator(new DrawObject());
         addOperator(new SetGraphicsStateParameters());
@@ -99,22 +108,28 @@ public class PDFImageProcessEngine extends PDFStreamEngine
                 float imageX = ctmNew.getTranslateX();
                 // lower left corner y coordinate
                 float imageY = ctmNew.getTranslateY();
-                String imageIdText = String.format("%03d", imageIndex++);
-                String pageIndexText = String.format("%03d", pageIndex);
 
                 // Save image
-                String imagePath = "/output/image_" + pageIndexText + "_" + imageIdText + ".png";
+
                 BufferedImage bufferedImage = image.getImage();
-                Path path = Paths.get(imagePath);
-                if (Files.exists(path)) {
-                    Files.delete(path); // Delete existing file if it exists
-                }
-                ImageIO.write(bufferedImage, "PNG", new File(imagePath));// Convert image to byte array
+                byte[] bytes = convertImageToByteArray(image); // Convert image to byte array
 
                 // page height is from top to bottom, so we need to convert the y coordinate
                 float newY = pageHeight - imageY;
-                String description = extractTextBelowImage(imageX, newY, imageWidth);
-                logger.info("Image file: {}, description: {}", imagePath, description);
+                String description = extractTextBelowImage(imageX, newY, imageXScale);
+                logger.info("Extracted description: {}", description);
+                if (description == null || description.isEmpty()) {
+                    if (imageWidth <= 50 || imageHeight <= 50) {
+                        // Skip very small images
+                        return;
+                    }
+                    description = pageText; // Fallback to the entire page text if no specific description found
+                }
+                KGImage kgImage = new KGImage(bytes, description);
+                jdbcRepository.saveImages(Schemas.DOCS, Arrays.asList(kgImage));
+                int len = Math.min(128, description.length());
+                logger.info("Image saved: size {}, page: {}/{}, description: {}", bytes.length, (pageIndex + 1), pageCount,
+                        description.substring(0, len));
             }
             else if(xobject instanceof PDFormXObject)
             {
@@ -128,60 +143,54 @@ public class PDFImageProcessEngine extends PDFStreamEngine
         }
     }
 
-    private String extractTextBelowImage(float imageLeft, float imageBottom, float imageWidth) {
-        List<TextPosition> textPositions = pageTextPositions;
+    public String extractTextBelowImage(float imageLeft, float imageBottom, float imageWidth) {
+        List<String> collectedText = new ArrayList<>();
+        boolean firstTextFound = false;
+        float currentCollectedLineY = imageBottom;
+        int lineCount = 1;
+        TextPosition lastCollectText = null;
+        for (TextPosition text : pageTextPositions) {
+            float textX = text.getX();
+            float textY = text.getY();
+            float fontSize = text.getFontSize();
+            float verticalTolerance = 1 * fontSize; // Allowable vertical distance
+            float horizontalTolerance = 20; // Allowable horizontal margin
 
-        // Group text into lines
-        Map<Float, List<TextPosition>> textLines = new TreeMap<>();
-        for (TextPosition text : textPositions) {
-            float lineY = Math.round(text.getY() * 10) / 10f; // Group by similar Y positions
-            textLines.computeIfAbsent(lineY, k -> new ArrayList<>()).add(text);
+
+            // Check if the text is below the image and within the x-range
+            if (isBelowAndInXRange(imageLeft, imageBottom, imageWidth, textY, textX, horizontalTolerance)) {
+                if (textY - currentCollectedLineY > verticalTolerance) {
+                    // If the new line is too far from the last collected text, reset currentLineY
+                    continue;
+                }
+                String unitCode = text.getUnicode().trim();
+                // Collect the text
+                if (lastCollectText != null && lastCollectText.getY() != textY) {
+                    // If the last collected text is on a different line, reset the current line Y position
+                    collectedText.add("\n");
+                }
+                collectedText.add(unitCode);
+                lastCollectText = text;
+
+                currentCollectedLineY = textY; // Update the current line Y position
+                if (unitCode.contains("\n") || unitCode.contains("\r")) {
+                    // If the text is a newline character, skip it
+                    lineCount++;
+                }
+                if (lineCount >= 3) {
+                    break;
+                }
+            }
         }
 
-        // Define search area below image
-        List<String> belowLines = new ArrayList<>();
+        return String.join("", collectedText);
+    }
 
-        float lastY = imageBottom;
-        float lastFontSize = 0;
-        for (Map.Entry<Float, List<TextPosition>> entry : textLines.entrySet()) {
-            if (belowLines.size() >= 3) {
-                break;
-            }
-            float lineY = entry.getKey();
-            List<TextPosition> line = entry.getValue();
-            if (lineY < imageBottom || line.isEmpty()) {
-                continue;
-            }
-            TextPosition firstText = line.get(0);
-            float fontSize = firstText.getFontSize();
-            float horizontalTolerance = 20;
-            float verticalTolerance = 2 * fontSize; // Look within 50 points below image
-            if (firstText.getX() < imageLeft - horizontalTolerance ||
-                firstText.getX() > imageLeft + imageWidth + horizontalTolerance) {
-                continue; // Skip lines that are not horizontally aligned with the image
-            }
-            if (lastFontSize != 0 && fontSize != lastFontSize) {
-                break;
-            }
-            TextPosition lastText = line.get(line.size() - 1);
-            if (lastText.getX() < imageLeft - horizontalTolerance ||
-                lastText.getX() > imageLeft + imageWidth + horizontalTolerance) {
-                // text line is wider than image, should not be a description for the image
-                break;
-            }
-            if (lineY > lastY + verticalTolerance) {
-                // line is far away from last line
-                break;
-            }
-            lastY = lineY;
-            belowLines.add(line.stream()
-                    .sorted(Comparator.comparing(TextPosition::getX))
-                    .map(TextPosition::getUnicode)
-                    .collect(Collectors.joining())
-                    .trim());
-        }
-
-        return String.join("\n", belowLines);
+    private static boolean isBelowAndInXRange(float imageLeft, float imageBottom, float imageWidth, float textY,
+                                              float textX, float horizontalTolerance) {
+        return textY > imageBottom &&
+                textX >= imageLeft - horizontalTolerance &&
+                textX <= imageLeft + imageWidth + horizontalTolerance;
     }
 
     private static byte[] convertImageToByteArray(PDImageXObject image) throws IOException {

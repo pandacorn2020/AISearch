@@ -34,6 +34,9 @@ public class GraphBuilder {
     @Autowired
     private KgProperties kgProperties;
 
+    @Autowired
+    private FileService fileService;
+
     private final LLMModel llmModel;
     private final DocumentLoader documentLoader;
     private final JdbcRepository jdbcRepository;
@@ -137,12 +140,6 @@ public class GraphBuilder {
         logger.info("Finished building knowledge graph for: {}/{}",
                 schemaName, description);
     }
-
-    public void buildEBMGraph() {
-        String directoryName = "/docs";
-        buildGraph(Schemas.DOCS, directoryName);
-    }
-
     private void buildGraph(String schemaName, String directoryName) {
         try {
             Path path = Paths.get(directoryName);
@@ -168,7 +165,7 @@ public class GraphBuilder {
                     return;
                 }
                 logger.info("Processing file: {}", description);
-                String text = FileConverter.convertFileToText(Files.newInputStream(path),
+                String text = fileService.convertFileToText(Files.newInputStream(path),
                         description);
                 boolean direct = description.startsWith("slice") && description.endsWith(".txt")
                         || description.endsWith(".json");

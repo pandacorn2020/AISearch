@@ -19,15 +19,23 @@ public class DocumentLoader {
         while (start < text.length()) {
             int end = Math.min(text.length(), start + SPLIT_SIZE);
             String chunk = text.substring(start, end);
+            if (chunk.isEmpty()) {
+                break;
+            }
             if (chunk.trim().isEmpty()) {
-                start = end - OVERLAP_SIZE;
+                start = start + (end - start) / 2;
                 continue;
             }
             chunks.add(chunk);
             if (start + chunk.length() >= text.length()) {
                 break;
             }
-            start = end - OVERLAP_SIZE;
+            int newStart = end - OVERLAP_SIZE;
+            if (newStart < start) {
+                start = start + (end - start) / 2;
+            } else {
+                start = newStart;
+            }
         }
         return chunks.toArray(new String[0]);
     }

@@ -44,3 +44,12 @@ CREATE TABLE KGRelationship (
 
 create index index_KGRelationship_source on KGRelationship (source);
 create index index_KGRelationship_target on KGRelationship (target);
+
+CREATE TABLE KGIMAGE (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    content BLOB NOT NULL,
+    description TEXT
+);
+create vector index on KGIMAGE (description);
+create text index text_index_kgimage_description on KGIMAGE (description);
+

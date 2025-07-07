@@ -1,6 +1,7 @@
 package com.aisearch.util;
 
 import com.aisearch.service.DocumentLoader;
+import com.aisearch.service.FileService;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -12,7 +13,8 @@ public class FileConverterTest {
     public void testConvertPdfToText() {
         try {
             InputStream is = DocumentLoader.getInputStream("china-economic-monitor-q2-2024.pdf");
-            String text = FileConverter.convertPdfToText(is);
+            FileService fileService = new FileService();
+            String text = fileService.convertFileToText(is, "test");
             System.out.println(text);
             Assertions.assertTrue(text.contains("一季度中国GDP"));
             Assertions.assertTrue(text.contains("国家药品监督管理局发布"));

@@ -1,6 +1,8 @@
 package com.aisearch.repository;
 
 import com.aisearch.entity.*;
+import com.aisearch.util.TextSimilarity;
+import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
@@ -9,10 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Repository
@@ -53,6 +52,30 @@ public class JdbcRepository {
             kgEntity.setFileName(rs.getString("file_name"));
 
             return kgEntity;
+        }
+    };
+
+    private RowMapper<KGImage> kgImageRowMapper = new RowMapper<KGImage>() {
+        @Override
+        public KGImage mapRow(ResultSet rs, int rowNum) throws SQLException {
+            float score = rs.getFloat(SCORE_COLUMN);
+            if (score < KG_IMAGE_SCORE) {
+                return null;
+            }
+            KGImage kgImage = new KGImage();
+            kgImage.setContent(rs.getBytes("content"));
+            kgImage.setDescription(rs.getString("description"));
+            return kgImage;
+        }
+    };
+
+    private RowMapper<KGImage> noScoreKgImageRowMapper = new RowMapper<KGImage>() {
+        @Override
+        public KGImage mapRow(ResultSet rs, int rowNum) throws SQLException {
+            KGImage kgImage = new KGImage();
+            kgImage.setContent(rs.getBytes("content"));
+            kgImage.setDescription(rs.getString("description"));
+            return kgImage;
         }
     };
 
@@ -297,6 +320,44 @@ public class JdbcRepository {
         }
     }
 
+    public KGImage findKGImageById(String schema, long id) {
+        try {
+            String sql = String.format("SELECT * FROM %s.kgimage WHERE id = ?", schema);
+            return jdbcTemplate.queryForObject(sql, noScoreKgImageRowMapper, id);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    public List<KGImage> findKGImagesByDescriptionSimilarity(String schema, String description, String[] entities) {
+        try {
+            String sql = String.format("SELECT * FROM %s.kgimage WHERE description vsearch ?", schema);
+            List<KGImage> images = jdbcTemplate.query(sql, kgImageRowMapper, description);
+            if (images.isEmpty()) {
+                for (String entity : entities) {
+                    sql = String.format("SELECT * FROM %s.kgimage WHERE description contains ?", schema);
+                    List<KGImage> entityImages = jdbcTemplate.query(sql, kgImageRowMapper, entity);
+                    images.addAll(entityImages);
+                }
+                List<ScoreImage> scoreImages = new ArrayList<>();
+                for (KGImage image : images) {
+                    double score = TextSimilarity.getSimilarity(description, image.getDescription());
+                    if (score > KG_IMAGE_SCORE) {
+                        scoreImages.add(new ScoreImage(score, image));
+                    }
+                }
+                Collections.sort(scoreImages);
+                images.clear();
+                for (ScoreImage scoreImage : scoreImages) {
+                    images.add(scoreImage.getImage());
+                }
+            }
+            return images;
+        } catch (Exception e) {
+            return new ArrayList<>();
+        }
+    }
+
     public void deleteKGEntityById(String schema, String id) {
         try {
             String sql = String.format("DELETE FROM %s.kgentity WHERE name = ?", schema);
@@ -326,6 +387,15 @@ public class JdbcRepository {
         }
     }
 
+    public void saveImages(String schema, List<KGImage> images) {
+        String sql = String.format("INSERT INTO %s.kgimage (content, description) VALUES (?, ?)", schema);
+        List<Object[]> batchArgs = new ArrayList<>();
+        for (KGImage image : images) {
+            batchArgs.add(new Object[]{image.getContent(), image.getDescription()});
+        }
+        jdbcTemplate.batchUpdate(sql, batchArgs);
+    }
+
     public static final String SCORE_COLUMN = "__SCORE__";
     public static final float ENTITY_SCORE = 0.949f;
 
@@ -334,4 +404,30 @@ public class JdbcRepository {
     public static final float KG_COMMINITY_SCORE = 0.75f;
 
     public static final float KG_RELATION_SHIP_SCORE = 0.50f;
+
+    public static final float KG_IMAGE_SCORE = 0.90f;
+
+    static class ScoreImage implements Comparable<ScoreImage> {
+        @Override
+        public int compareTo(@NotNull ScoreImage o) {
+            return -Double.compare(o.getScore(), this.getScore());
+        }
+
+        private double score;
+        private KGImage image;
+
+        public ScoreImage(double score, KGImage image) {
+            this.score = score;
+            this.image = image;
+        }
+
+        public double getScore() {
+            return score;
+        }
+
+        public KGImage getImage() {
+            return image;
+        }
+    }
+
 }

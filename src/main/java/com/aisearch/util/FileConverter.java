@@ -1,7 +1,6 @@
 package com.aisearch.util;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.apache.pdfbox.pdmodel.PDDocument;
-import org.apache.pdfbox.text.PDFTextStripper;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.hwpf.HWPFDocument;
 import org.apache.poi.hwpf.extractor.WordExtractor;
@@ -30,22 +29,13 @@ public class FileConverter {
     }
 
     public static String convertFileToText(InputStream inputStream, String fileName) throws IOException {
-        if (fileName.endsWith(".pdf")) {
-            return convertPdfToText(inputStream);
-        } else if (fileName.endsWith(".doc") || fileName.endsWith(".docx")) {
+        if (fileName.endsWith(".doc") || fileName.endsWith(".docx")) {
             return convertWordToText(inputStream, fileName);
         } else if (fileName.endsWith(".xls") || fileName.endsWith(".xlsx")) {
             return convertExcelToText(inputStream, fileName);
         } else {
             // read input stream as text
             return new String(inputStream.readAllBytes(), "UTF-8");
-        }
-    }
-
-    public static String convertPdfToText(InputStream inputStream) throws IOException {
-        try (PDDocument document = PDDocument.load(inputStream)) {
-            PDFTextStripper pdfStripper = new PDFTextStripper();
-            return pdfStripper.getText(document);
         }
     }
 
