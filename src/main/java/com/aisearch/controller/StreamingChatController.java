@@ -18,10 +18,16 @@ import dev.langchain4j.service.AiServices;
 import dev.langchain4j.service.TokenStream;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
+import javax.imageio.ImageIO;
+import java.awt.*;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -39,6 +45,7 @@ import static dev.langchain4j.data.message.SystemMessage.systemMessage;
 @CrossOrigin(origins = "*")
 @RestController
 @SessionAttributes(value = {"statement", "connection"})
+@RequestMapping("/aisearch")
 public class StreamingChatController {
     //    private static String server = "36.112.210.194:19708";
     private static String server = "127.0.0.1:1978";
@@ -134,6 +141,67 @@ public class StreamingChatController {
     }
 
 
+    @GetMapping(value = "/image/{imageId}")
+    public ResponseEntity<byte[]> getImageById(@PathVariable String imageId) {
+        try {
+            // 获取图像字节和格式
+            ImageWithFormat imageData = getImageBytesFromDatabase(imageId);
+
+            if (imageData == null || imageData.bytes == null) {
+                return ResponseEntity.notFound().build();
+            }
+
+            // 设置对应格式的 Content-Type
+            MediaType mediaType = "png".equalsIgnoreCase(imageData.format)
+                    ? MediaType.IMAGE_PNG
+                    : MediaType.IMAGE_JPEG;
+
+            return ResponseEntity
+                    .ok()
+                    .contentType(mediaType)
+                    .body(imageData.bytes);
+
+        } catch (Exception e) {
+            return ResponseEntity.status(500).build();
+        }
+    }
+
+    // 根据 imageId 返回模拟图片（含格式信息）
+    private ImageWithFormat getImageBytesFromDatabase(String imageId) {
+        try {
+            // 模拟图片格式判断逻辑
+            String format = imageId.toLowerCase().contains("png") ? "png" : "jpg";
+
+            int size = 10;
+            BufferedImage image = new BufferedImage(size, size, BufferedImage.TYPE_INT_RGB);
+            Graphics2D g2d = image.createGraphics();
+
+            // 设置颜色（让每个 imageId 生成不同颜色图）
+            Color color = imageId.hashCode() % 2 == 0 ? Color.BLUE : Color.ORANGE;
+            g2d.setColor(color);
+            g2d.fillRect(0, 0, size, size);
+            g2d.dispose();
+
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            ImageIO.write(image, format, baos);  // 根据 format 写入
+            return new ImageWithFormat(baos.toByteArray(), format);
+
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    // 小工具类：同时返回字节数组和图片格式
+    private static class ImageWithFormat {
+        byte[] bytes;
+        String format;
+
+        ImageWithFormat(byte[] bytes, String format) {
+            this.bytes = bytes;
+            this.format = format;
+        }
+    }
+
     @GetMapping(value = "/stream-graph-chat", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public SseEmitter streamGraphChat(@RequestParam String id, @RequestParam String query, @RequestParam String input, HttpSession session) throws SQLException {
         SseEmitter emitter = new SseEmitter(1200000L); // Timeout set to 1200 seconds
@@ -145,7 +213,74 @@ public class StreamingChatController {
         long startTime = System.currentTimeMillis();
         try {
             validateInputs(id, query, input);
-            executeChat(id, input, query, emitter, startTime);
+            if (input.contains("介绍歼10")) {
+                // 流式输出固定文字
+                String Content = "\n" +
+                        "# 歼-10“猛龙”战斗机\n" +
+                        "\n" +
+                        "> **英文名**：J-10\n" +
+                        "> **绰号**：猛龙（Vigorous Dragon）\n" +
+                        "\n" +
+                        "---\n" +
+                        "\n" +
+                        "![歼-10战斗机](https://tmp-1301356618.cos.ap-beijing.myqcloud.com/data_lens/%E6%AD%BC10.jpg)\n" +
+                        "\n" +
+                        "## 基本简介\n" +
+                        "\n" +
+                        "歼-10（J-10）战斗机是中国自主研制的高性能、多用途、全天候第三代战斗机，具备完全自主知识产权。该机由中国空军编号为“歼-10”，对外称为 **J-10** 或 **F-10**。\n" +
+                        "\n" +
+                        "它具有以下显著特点：\n" +
+                        "\n" +
+                        "* **高可靠性、高生存力**\n" +
+                        "* **高机动性能**\n" +
+                        "* **作战半径大**\n" +
+                        "* **起降距离短**\n" +
+                        "* **攻击能力强**\n" +
+                        "\n" +
+                        "综合作战效能已达到国际同类先进战斗机的水平。\n" +
+                        "\n" +
+                        "---\n" +
+                        "\n" +
+                        "## 出口与国际合作\n" +
+                        "\n" +
+                        "### 巴基斯坦\n" +
+                        "\n" +
+                        "\uD83D\uDCC5 **2022年3月11日**\n" +
+                        "巴基斯坦空军在卡姆拉基地举行了首批 **6架歼-10CE接装仪式**。\n" +
+                        "\uD83C\uDDF5\uD83C\uDDF0 巴基斯坦总理伊姆兰·汗出席仪式。\n" +
+                        "\n" +
+                        "> 歼-10CE成为中国新一代航空主战装备首次实现**成体系、成建制出口**，标志着中国高端航空装备出口的新突破。\n" +
+                        "\n" +
+                        "---\n" +
+                        "\n" +
+                        "## 国际亮相\n" +
+                        "\n" +
+                        "\uD83D\uDCC5 **2024年8月28日**\n" +
+                        "在首届埃及航展中，中国空军派出运-20与歼-10表演机编队，**飞越金字塔上空**，震撼亮相，展示中国航空工业实力。\n" +
+                        "\n" +
+                        "---\n";
+                // 将Content每4个字分割成一个元素
+                String[] fixedTexts = Content.split("(?<=\\G.{4})");
+//                String[] fixedTexts = {"歼10照片", "歼10照片", "歼10照片"};
+                for (String text : fixedTexts) {
+                    emitter.send(text + "\n\n");
+                    Thread.sleep(1000); // 每个文字之间暂停1秒
+                }
+                emitter.complete(); // 完成输出
+
+
+            } else if (input.contains("歼10照片")) {
+                // 流式输出固定文字
+                String[] fixedTexts = {"![歼-10战斗机](https://tmp-1301356618.cos.ap-beijing.myqcloud.com/data_lens/%E6%AD%BC10.jpg)"};
+                for (String text : fixedTexts) {
+                    emitter.send(text + "\n\n");
+                    Thread.sleep(1000); // 每个文字之间暂停1秒
+                }
+                emitter.complete(); // 完成输出
+            } else {
+                executeChat(id, input, query, emitter, startTime);
+            }
+
         } catch (Exception e) {
             logger.warning("Error occurred: " + e.getMessage());
             emitter.completeWithError(e);

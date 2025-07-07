@@ -83,7 +83,7 @@ public class GraphSearch {
         if (!images.isEmpty()) {
             StringJoiner imageJoiner = new StringJoiner("\n", "\n请在报告的结尾生成如下markdown：\n", "");
             images.forEach(image -> {
-                imageJoiner.add(String.format("![图片%s](https://ai.cloudwave.com/%s.png)", image.getId(), image.getId()));
+                imageJoiner.add(String.format("![图片%s](http://127.0.0.1:8080/aisearch/image/%s)", image.getId(), image.getId()));
             });
             joiner.add(imageJoiner.toString());
         }
