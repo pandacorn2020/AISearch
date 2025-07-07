@@ -1,6 +1,7 @@
 package com.aisearch.repository;
 
 import com.aisearch.entity.*;
+import com.aisearch.service.Schemas;
 import com.aisearch.util.TextSimilarity;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -320,8 +321,9 @@ public class JdbcRepository {
         }
     }
 
-    public KGImage findKGImageById(String schema, long id) {
+    public KGImage findKGImageById(long id) {
         try {
+            String schema = Schemas.DOCS;
             String sql = String.format("SELECT * FROM %s.kgimage WHERE id = ?", schema);
             return jdbcTemplate.queryForObject(sql, noScoreKgImageRowMapper, id);
         } catch (Exception e) {
