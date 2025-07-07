@@ -76,10 +76,18 @@ public class GraphSearch {
         StringJoiner joiner = new StringJoiner("\n\n");
         String input = query.getQuery();
         String[] entities = query.getEntities();
-        for (String schema : Schemas.SCHEMAS) {
-            String result = search(schema, input, entities);
-            joiner.add(result);
+        String result = search(Schemas.DOCS, input, entities);
+        joiner.add(result);
+        List<KGImage> images = jdbcRepository.findKGImagesByDescriptionSimilarity(
+                Schemas.DOCS, input, entities);
+        if (!images.isEmpty()) {
+            StringJoiner imageJoiner = new StringJoiner("\n", "\n请在报告的结尾生成如下markdown：\n", "");
+            images.forEach(image -> {
+                imageJoiner.add(String.format("![图片%s](https://ai.cloudwave.com/%s.png)", image.getId(), image.getId()));
+            });
+            joiner.add(imageJoiner.toString());
         }
+
         return joiner.toString();
     }
 
