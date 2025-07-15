@@ -1,5 +1,6 @@
 package com.aisearch.controller;
 
+import com.aisearch.entity.KGImage;
 import com.aisearch.repository.JdbcRepository;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
@@ -146,7 +147,7 @@ public class StreamingChatController {
 
 
     @GetMapping(value = "/image/{imageId}")
-    public ResponseEntity<byte[]> getImageById(@PathVariable String imageId) {
+    public ResponseEntity<byte[]> getImageById(@PathVariable Long imageId) {
         try {
             // 获取图像字节和格式
             ImageWithFormat imageData = getImageBytesFromDatabase(imageId);
@@ -171,24 +172,28 @@ public class StreamingChatController {
     }
 
     // 根据 imageId 返回模拟图片（含格式信息）
-    private ImageWithFormat getImageBytesFromDatabase(String imageId) {
+    private ImageWithFormat getImageBytesFromDatabase(Long imageId) {
         try {
-            // 模拟图片格式判断逻辑
-            String format = imageId.toLowerCase().contains("png") ? "png" : "jpg";
 
-            int size = 10;
-            BufferedImage image = new BufferedImage(size, size, BufferedImage.TYPE_INT_RGB);
-            Graphics2D g2d = image.createGraphics();
-
-            // 设置颜色（让每个 imageId 生成不同颜色图）
-            Color color = imageId.hashCode() % 2 == 0 ? Color.BLUE : Color.ORANGE;
-            g2d.setColor(color);
-            g2d.fillRect(0, 0, size, size);
-            g2d.dispose();
-
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            ImageIO.write(image, format, baos);  // 根据 format 写入
-            return new ImageWithFormat(baos.toByteArray(), format);
+            KGImage kgimage = jdbcRepository.findKGImageById(imageId);
+            return new ImageWithFormat(kgimage.getContent(), "png");
+//
+//            // 模拟图片格式判断逻辑
+//            String format = imageId.toLowerCase().contains("png") ? "png" : "jpg";
+//
+//            int size = 10;
+//            BufferedImage image = new BufferedImage(size, size, BufferedImage.TYPE_INT_RGB);
+//            Graphics2D g2d = image.createGraphics();
+//
+//            // 设置颜色（让每个 imageId 生成不同颜色图）
+//            Color color = imageId.hashCode() % 2 == 0 ? Color.BLUE : Color.ORANGE;
+//            g2d.setColor(color);
+//            g2d.fillRect(0, 0, size, size);
+//            g2d.dispose();
+//
+//            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+//            ImageIO.write(image, format, baos);  // 根据 format 写入
+//            return new ImageWithFormat(baos.toByteArray(), format);
 
         } catch (Exception e) {
             return null;

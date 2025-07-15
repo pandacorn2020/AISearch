@@ -66,6 +66,7 @@ public class JdbcRepository {
             KGImage kgImage = new KGImage();
             kgImage.setContent(rs.getBytes("content"));
             kgImage.setDescription(rs.getString("description"));
+            kgImage.setId(rs.getLong("id"));
             return kgImage;
         }
     };
@@ -334,7 +335,10 @@ public class JdbcRepository {
     public List<KGImage> findKGImagesByDescriptionSimilarity(String schema, String description, String[] entities) {
         try {
             String sql = String.format("SELECT * FROM %s.kgimage WHERE description vsearch ?", schema);
-            List<KGImage> images = jdbcTemplate.query(sql, kgImageRowMapper, description);
+            List<KGImage> images = jdbcTemplate.query(sql, kgImageRowMapper, description)
+                    .stream()
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.toList());;
             if (images.isEmpty()) {
                 for (String entity : entities) {
                     sql = String.format("SELECT * FROM %s.kgimage WHERE description contains ? top 1", schema);
@@ -407,8 +411,8 @@ public class JdbcRepository {
 
     public static final float KG_RELATION_SHIP_SCORE = 0.50f;
 
-    public static final float KG_IMAGE_SCORE = 0.90f;
-    public static final float KG_IMAGE_SCORE_LOW = 0.85f;
+    public static final float KG_IMAGE_SCORE = 0.85f;
+    public static final float KG_IMAGE_SCORE_LOW = 0.7f;
 
     static class ScoreImage implements Comparable<ScoreImage> {
         @Override

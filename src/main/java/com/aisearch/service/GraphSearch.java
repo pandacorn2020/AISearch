@@ -1,5 +1,6 @@
 package com.aisearch.service;
 
+import com.aisearch.config.WebserverProperties;
 import com.aisearch.entity.*;
 import com.aisearch.llm.LLMModel;
 import com.aisearch.llm.RagQuery;
@@ -23,6 +24,9 @@ public class GraphSearch {
 
     @Autowired
     private LLMModel llmModel;
+
+    @Autowired
+    private WebserverProperties webServerProperties;
 
     public static final int RELATIONSHIP_MAX_SIZE = 128;
     public static final int DOC_SEGMENT_MAX_SIZE = 6;
@@ -81,9 +85,9 @@ public class GraphSearch {
         List<KGImage> images = jdbcRepository.findKGImagesByDescriptionSimilarity(
                 Schemas.DOCS, input, entities);
         if (!images.isEmpty()) {
-            StringJoiner imageJoiner = new StringJoiner("\n", "\n请在报告的结尾生成如下markdown：\n", "");
+            StringJoiner imageJoiner = new StringJoiner("\n", "\n请在报告的合适位置根据图片描述加上如下markdown文本（加上之后，可以精简图片描述。）：\n", "");
             images.forEach(image -> {
-                imageJoiner.add(String.format("![图片%s](http://127.0.0.1:8080/aisearch/image/%s)", image.getId(), image.getId()));
+                imageJoiner.add(String.format("![%s](%s%s)", image.getDescription().replaceAll("[\\r\\n]","_").replaceAll("[\\[\\]]","_"), webServerProperties.getImageUrlPrefix(),image.getId()));
             });
             joiner.add(imageJoiner.toString());
         }
