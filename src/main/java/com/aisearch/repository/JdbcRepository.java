@@ -332,22 +332,38 @@ public class JdbcRepository {
         }
     }
 
-    public List<KGImage> findKGImagesByDescriptionSimilarity(String schema, String description, String[] entities) {
+    public List<KGImage> findKGImagesByDescriptionSimilarity(String schema, String input, String[] entities) {
         try {
             String sql = String.format("SELECT * FROM %s.kgimage WHERE description vsearch ?", schema);
-            List<KGImage> images = jdbcTemplate.query(sql, kgImageRowMapper, description)
+            List<KGImage> images = jdbcTemplate.query(sql, kgImageRowMapper, input)
                     .stream()
                     .filter(Objects::nonNull)
                     .collect(Collectors.toList());;
             if (images.isEmpty()) {
+                sql = String.format("SELECT * FROM %s.kgimage WHERE input contains ? top 1", schema);
+                images = jdbcTemplate.query(sql, noScoreKgImageRowMapper, input);
+                if (!images.isEmpty()) {
+                    return images;
+                }
+                if (entities.length > 1) {
+                    StringJoiner joiner = new StringJoiner(" ");
+                    for (String entity : entities) {
+                        joiner.add(entity);
+                    }
+                    images = jdbcTemplate.query(sql, noScoreKgImageRowMapper, joiner.toString());
+                    if (!images.isEmpty()) {
+                        return images;
+                    }
+                }
+
                 for (String entity : entities) {
-                    sql = String.format("SELECT * FROM %s.kgimage WHERE description contains ? top 1", schema);
+                    sql = String.format("SELECT * FROM %s.kgimage WHERE input contains ? top 1", schema);
                     List<KGImage> entityImages = jdbcTemplate.query(sql, noScoreKgImageRowMapper, entity);
                     images.addAll(entityImages);
                 }
                 List<ScoreImage> scoreImages = new ArrayList<>();
                 for (KGImage image : images) {
-                    double score = TextSimilarity.getSimilarity(description, image.getDescription());
+                    double score = TextSimilarity.getSimilarity(input, image.getDescription());
                     if (score > KG_IMAGE_SCORE_LOW) {
                         scoreImages.add(new ScoreImage(score, image));
                     }
