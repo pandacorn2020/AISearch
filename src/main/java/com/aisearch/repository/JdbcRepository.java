@@ -340,7 +340,7 @@ public class JdbcRepository {
                     .filter(Objects::nonNull)
                     .collect(Collectors.toList());;
             if (images.isEmpty()) {
-                sql = String.format("SELECT * FROM %s.kgimage WHERE input contains ? top 1", schema);
+                sql = String.format("SELECT * FROM %s.kgimage WHERE description contains ? top 1", schema);
                 images = jdbcTemplate.query(sql, noScoreKgImageRowMapper, input);
                 if (!images.isEmpty()) {
                     return images;
@@ -357,7 +357,7 @@ public class JdbcRepository {
                 }
 
                 for (String entity : entities) {
-                    sql = String.format("SELECT * FROM %s.kgimage WHERE input contains ? top 1", schema);
+                    sql = String.format("SELECT * FROM %s.kgimage WHERE description contains ? top 1", schema);
                     List<KGImage> entityImages = jdbcTemplate.query(sql, noScoreKgImageRowMapper, entity);
                     images.addAll(entityImages);
                 }
