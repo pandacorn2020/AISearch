@@ -77,6 +77,7 @@ public class JdbcRepository {
             KGImage kgImage = new KGImage();
             kgImage.setContent(rs.getBytes("content"));
             kgImage.setDescription(rs.getString("description"));
+            kgImage.setId(rs.getLong("id"));
             return kgImage;
         }
     };
