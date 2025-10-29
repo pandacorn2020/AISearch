@@ -51,6 +51,7 @@ public class SchemaService {
                         try (Statement statement = connection.createStatement()) {
                             String sql = joiner.toString();
                             logger.info("Executing SQL: {}", sql);
+                            statement.execute("use " + schema);
                             statement.execute(sql);
                         }
                         joiner = new StringJoiner("\n");
