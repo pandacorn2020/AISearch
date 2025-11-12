@@ -6,6 +6,10 @@ import com.aisearch.llm.LLMModel;
 import com.aisearch.llm.RagQuery;
 import com.aisearch.llm.SessionData;
 import com.aisearch.repository.*;
+import com.wisdomdata.jdbc.CloudConnection;
+import com.wisdomdata.jdbc.CloudDatabaseMetaData;
+import com.wisdomdata.jdbc.CloudResultSet;
+import com.wisdomdata.tools.dbclient.DBConnectionHelper;
 import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,6 +22,7 @@ import java.util.*;
 public class GraphSearch {
     public static final int MAX_COUNT = 32;
     private static final Logger logger = LoggerFactory.getLogger(GraphSearch.class.getSimpleName());
+    private static final String APP_PREFIX = "aiask";
 
     @Autowired
     private JdbcRepository jdbcRepository;
@@ -53,12 +58,42 @@ public class GraphSearch {
 
     public void loadGraphs() {
         try {
-            String[] schemas = Schemas.SCHEMAS;
-            for (String schema : schemas) {
-                KGGraph graph = new KGGraph(schema);
-                graph.load(this);
-                graphMap.put(schema, graph);
+
+            CloudConnection connection = (CloudConnection) DBConnectionHelper.connect("127.0.0.1", "system", "CHANGEME");
+            connection.setAutoCommit(false);
+            CloudDatabaseMetaData meta = (CloudDatabaseMetaData) connection.getMetaData();
+            CloudResultSet result = (CloudResultSet) meta.getSchemas();
+            while (result.next()) {
+                String schemaName = result.getString("TABLE_SCHEM");
+                if (schemaName.startsWith(APP_PREFIX)) {
+                    // 过滤出以aiask_开头的schema
+                    KGGraph graph = new KGGraph(schemaName);
+                    graph.load(this);
+                    graphMap.put(schemaName, graph);
+
+                }
+                System.out.println(schemaName);
             }
+//
+//            String[] schemas = Schemas.SCHEMAS;
+//            for (String schema : schemas) {
+//                KGGraph graph = new KGGraph(schema);
+//                graph.load(this);
+//                graphMap.put(schema, graph);
+//            }
+        } catch (Throwable t) {
+            logger.error("Error loading graphs", t);
+        }
+    }
+
+    public void loadGraph(String schema) {
+        try {
+
+            // 过滤出以aiask_开头的schema
+            KGGraph graph = new KGGraph(schema);
+            graph.load(this);
+            graphMap.put(schema, graph);
+
         } catch (Throwable t) {
             logger.error("Error loading graphs", t);
         }
@@ -76,14 +111,14 @@ public class GraphSearch {
         return DOC_SEGMENT_MAX_SIZE;
     }
 
-    public String search(RagQuery query) {
+    public String search(String schema, RagQuery query) {
         StringJoiner joiner = new StringJoiner("\n\n");
         String input = query.getQuery();
         String[] entities = query.getEntities();
-        String result = search(Schemas.DOCS, input, entities);
+        String result = search(schema, input, entities);
         joiner.add(result);
         List<KGImage> images = jdbcRepository.findKGImagesByDescriptionSimilarity(
-                Schemas.DOCS, input, entities);
+                schema, input, entities);
         if (!images.isEmpty()) {
             StringJoiner imageJoiner = new StringJoiner("\n", "\n请在报告的合适位置根据图片描述加上如下markdown文本（加上之后，可以精简图片描述。）：\n", "");
             images.forEach(image -> {

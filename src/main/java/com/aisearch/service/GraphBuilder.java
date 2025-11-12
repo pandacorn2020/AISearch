@@ -83,7 +83,7 @@ public class GraphBuilder {
     @Transactional
     public void buildGraph() {
         String directoryName = kgProperties.getInputDir();
-        buildGraph("DOCS", directoryName);
+        buildGraph(Schemas.DOCS, directoryName);
     }
 
 

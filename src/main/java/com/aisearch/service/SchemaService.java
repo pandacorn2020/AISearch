@@ -20,9 +20,9 @@ public class SchemaService {
     private DataSource dataSource;
     private static final Logger logger = LoggerFactory.getLogger(SchemaService.class.getSimpleName());
 
-    public void initializeSchemas() {
+    public void initializeSchemas(String[] schemas) {
         try (Connection connection = dataSource.getConnection()) {
-            for (String schema : Schemas.SCHEMAS) {
+            for (String schema : schemas) {
                 createSchema(connection, schema);
                 executeSqlFile(connection, schema);
             }

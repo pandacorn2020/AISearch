@@ -6,7 +6,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class Schemas {
-    public static final String DOCS = "DOCS";
+    public static final String DOCS = "DOCS_JT";
 
     public static final String[] SCHEMAS = {DOCS};
 

@@ -1,5 +1,9 @@
 package com.aisearch.controller;
 
+import com.aisearch.dto.RequestCommon;
+import com.aisearch.dto.RequestContentChatSelect;
+import com.aisearch.dto.RequestContentKnowledgeSearch;
+import com.aisearch.dto.ResponseCommon;
 import com.aisearch.entity.KGImage;
 import com.aisearch.repository.JdbcRepository;
 import com.alibaba.fastjson.JSON;
@@ -8,6 +12,7 @@ import com.alibaba.fastjson.JSONObject;
 import com.aisearch.llm.*;
 import com.aisearch.service.DocumentLoader;
 import com.aisearch.service.GraphSearch;
+import com.alibaba.fastjson.TypeReference;
 import com.wisdomdata.jdbc.CloudConnection;
 import com.wisdomdata.jdbc.CloudStatement;
 import dev.langchain4j.agent.tool.ToolExecutionRequest;
@@ -23,6 +28,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
@@ -41,6 +47,7 @@ import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import static com.aisearch.controller.KnowledgeController.isRequestBodyValid;
 import static com.wisdomdata.jdbc.CloudStatement.END_OF_STREAMING_CHAT;
 import static dev.langchain4j.data.message.SystemMessage.systemMessage;
 
@@ -66,6 +73,8 @@ public class StreamingChatController {
 
     private static String KEY_INPUT = "input";
     private static String KEY_ENTITIES = "entities";
+    private static String KEY_KEY_SCHEMA = "key_schema";
+    private static String KEY_KEY_SCHEMA_DESCRIPTION = "key_schema_description";
 
     public static String RAG_QUERY= "ragQuery";
 
@@ -112,37 +121,77 @@ public class StreamingChatController {
 
     @ResponseBody
     @PostMapping("/askgraph/select")
-    public JSONObject askNumberSelect(@RequestBody String body, HttpSession session) throws SQLException, IOException {
-        JSONObject obj = JSON.parseObject(body);
-        String reqContent = obj.getString("content");
+    public ResponseCommon<Object[]> askNumberSelect(@RequestBody String body, HttpSession session) throws SQLException, IOException {
 
-        JSONObject jsonObject = JSON.parseObject(reqContent);
-        String userId = obj.getString("from_id");
-//        stmt.execute("use " + schema + ";");
-        JSONObject resp = new JSONObject();
+        ResponseCommon.Message msg = new ResponseCommon.Message("", "");
+        ResponseCommon<Object[]> resp = new ResponseCommon<>();
+        resp.setMsg(msg);
 
-        if (userId == null || userId.trim().equals("")) {
-            resp.put("content", "fail: userId or schema is null");
 
+
+        // 解析 JSON 为 RequestCommon<RequestContentKnowledgeReset>
+        RequestCommon<RequestContentChatSelect> request;
+        try {
+            request = JSON.parseObject(
+                body,
+                new TypeReference<RequestCommon<RequestContentChatSelect>>() {}
+            );
+        } catch (Exception ex) {
+            msg.setFail("请求体不是合法的 JSON 或解析失败: " + ex.getMessage());
+            resp.setMsg(msg);
+            resp.setCode(400);
+            resp.setContent(new Object[]{});
+            resp.setCount(0);
             return resp;
         }
 
-        Object o = mapUserData.get(userId);
+        // 打印（调试）
+        System.out.println("收到请求: " + request);
+
+        boolean requestBodyValid = isRequestBodyValid(request);
+        if (!requestBodyValid) {
+            msg.setFail("fromId,fromNickname,content 验证失败");
+            resp.setMsg(msg);
+            resp.setCode(400);
+            resp.setContent(new Object[]{});
+            resp.setCount(0);
+            return resp;
+        }
+
+
+
+        // 校验 schema 字段
+        String schema = request.getContent().getSchema();
+        if (!StringUtils.hasText(schema)) {
+            msg.setFail("content.schema 为空");
+            resp.setMsg(msg);
+            resp.setCode(400);
+            resp.setContent(new Object[]{});
+            resp.setCount(0);
+            return resp;
+        }
+
+
+        Object o = mapUserData.get(request.getFromId());
         HashMap<String, Object> userData;
         if (o == null) {
             userData = new HashMap<>();
         } else {
-            userData = mapUserData.get(userId);
+            userData = mapUserData.get(request.getFromId());
         }
         userData.put(KEY_HISTORY, new ChatMessage[0]);
         userData.put(KEY_INPUT, "");
         userData.put(KEY_ENTITIES, new String[0]);
-        mapUserData.put(userId, userData);
+        userData.put(KEY_KEY_SCHEMA, request.getContent().getSchema());
+        userData.put(KEY_KEY_SCHEMA_DESCRIPTION, request.getContent().getSchemaDescription());
+        mapUserData.put(request.getFromId(), userData);
 
-        JSONArray content = new JSONArray();
-        resp.put("content", "success");
-
+        resp.setCode(200);
+        resp.setContent(new Object[]{});
+        resp.setCount(0);
+        resp.getMsg().setSuccess("success");
         return resp;
+
     }
 
 
@@ -221,7 +270,7 @@ public class StreamingChatController {
 
         long startTime = System.currentTimeMillis();
         try {
-            validateInputs(id, query, input);
+            validateInputs(id,query, input);
             if (input.contains("介绍歼10")) {
                 // 流式输出固定文字
                 String Content = "\n" +
@@ -300,7 +349,7 @@ public class StreamingChatController {
 
     private void validateInputs(String userId, String query, String input) throws Exception {
         if (userId == null || userId.trim().isEmpty() || input == null || input.trim().isEmpty() || query == null || query.trim().isEmpty()) {
-            throw new Exception("userId, inputText, or query is empty");
+            throw new Exception("userId, schema, inputText, or query is empty");
         }
     }
 
@@ -328,7 +377,7 @@ public class StreamingChatController {
 
                 SessionData sessionData = new SessionData();
                 sessionData.setUserData(userData);
-                MeasureTools measureTools = new MeasureTools(sessionData, graphSearch);
+                MeasureTools measureTools = new MeasureTools(sessionData, graphSearch, (String) userData.get(KEY_KEY_SCHEMA));
 
                 StreamingChatController.Assistant assistant = AiServices.builder(StreamingChatController.Assistant.class)
                         .streamingChatLanguageModel(streamingChatModel)

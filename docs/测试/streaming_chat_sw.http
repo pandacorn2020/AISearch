@@ -1,0 +1,79 @@
+POST http://10.200.113.24:8080/aisearch/askgraph/select
+Content-Type: application/json
+
+{
+  "from_id": "guest",
+  "from_nickname": "guest",
+  "content": "{\"schema\":\"haiguan\",\"chat_type\":\"agent\",\"is_streaming\":true}"
+}
+
+### 1. 初始化，demo需要，参数随便填，后台目前只使用了 from_id 来标识用户身份
+
+GET http://10.200.113.24:8080/aisearch/stream-graph-chat?id=guest&input=职业中介机构可以从事哪些业务？&query=123
+Accept: text/event-stream; charset=UTF-8
+Accept-Charset: UTF-8
+
+
+
+
+### 2. 提问，目前query参数随便写
+
+POST http://127.0.0.1:8080/aisearch/knowledge/kgsearch
+Content-Type: application/json
+
+{
+  "query": "仲裁委员会在聘任仲裁员时，应从哪些人员中选聘？|仲裁委员会,聘任仲裁员,选聘人员"
+}
+
+### 知识库检索
+
+POST http://127.0.0.1:8080/aisearch/knowledge/upload
+Content-Type: multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW
+
+// 上传"I:\aisearch\input\舰载武器 2024\舰载武器　２０２４．０２_可搜索.pdf"
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="file"; filename="21test.docx"
+Content-Type: application/pdf
+
+< I:\aisearch\release_0623002\release_0623002\knowledge\21test.docx
+------WebKitFormBoundary7MA4YWxkTrZu0gW--
+
+### 文件上传
+
+
+POST http://127.0.0.1:8080/aisearch/knowledge/build
+Content-Type: application/json
+
+### 知识库构建
+
+POST http://127.0.0.1:8080/aisearch/knowledge/buildStatus
+Content-Type: application/json
+
+### 查询知识库构建状态
+
+GET http://127.0.0.1:8080/stream-graph-chat?id=guest&input=口苦，经常有胃反酸&query=123
+Accept: text/event-stream; charset=UTF-8
+Accept-Charset: UTF-8
+
+
+
+### 2. 提问，目前query参数随便写
+
+GET http://127.0.0.1:8080/stream-graph-chat?id=guest&input=多梦，胸闷&query=123
+Accept: text/event-stream; charset=UTF-8
+Accept-Charset: UTF-8
+
+
+### 3. 根据提示，追问，目前query参数随便写
+
+
+GET http://127.0.0.1:8080/stream-graph-chat?id=guest&input=next&query=123
+Accept: text/event-stream; charset=UTF-8
+Accept-Charset: UTF-8
+
+
+### 4. 继续输出另一份报告
+
+
+
+

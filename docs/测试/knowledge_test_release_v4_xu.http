@@ -1,0 +1,189 @@
+
+
+POST http://app.bitleap.cn:8085/aisearch/knowledge/v3/upload
+Content-Type: multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW
+
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="schema"
+
+aiask_test_schema123
+
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="file"; filename="网络访问控制系统.pdf"
+Content-Type: application/octet-stream
+
+< C:\Users\FENG\Desktop\tmp0812\网络访问控制系统.pdf
+------WebKitFormBoundary7MA4YWxkTrZu0gW--
+// 新增一个schema参数
+
+### 1. 文件上传并构建知识库
+### 调用成功结果：{
+#  "code": 200,
+#  "content": [],
+#  "count": 0,
+#  "msg": {
+#    "success": "文件上传成功",
+#    "fail": ""
+#  }
+#}
+### 调用失败结果：{
+#  "code": 500,
+#  "content": [],
+#  "count": 0,
+#  "msg": {
+#    "success": "",
+#    "fail": "文件上传失败"
+#  }
+#}
+
+POST http://app.bitleap.cn:8085/aisearch/knowledge/v3/buildStatus
+Content-Type: application/json
+
+{
+  "from_id": "123456",
+  "from_nickname": "用户123456",
+  "content": {
+    "schema": "aiask_test_schema123"
+  }
+}
+
+### 2. 状态获取
+###  调用成功结果-构建完成：{
+#  "code": 200,
+#  "content": [],
+#  "count": 0,
+#  "msg": {
+#    "success": "构建完成",
+#    "fail": ""
+#  }
+#}
+#调用失败结果-构建中：{
+#  "code": 500,
+#  "content": [],
+#  "count": 0,
+#  "msg": {
+#    "success": "",
+#    "fail": "构建中"
+#  }
+#}
+
+
+
+
+POST http://app.bitleap.cn:8085/aisearch/knowledge/v3/kgsearch
+Content-Type: application/json
+
+{
+  "from_id": "123456",
+  "from_nickname": "用户123456",
+  "content": {
+    "schema": "aiask_test_schema123",
+    "query": "仲裁委员会在聘任仲裁员时，应从哪些人员中选聘？|仲裁委员会,聘任仲裁员,选聘人员"
+  }
+}
+
+### 3. 知识库检索(相比v2版本，v3版本返回的content是一个数组，而不是一个字符串，并且请求体统一了规范（from_id,from_nickname,content）；同时支持指定schema)
+### 调用成功结果：{
+#  "code": 200,
+#  "content": [
+#    "仲裁委员会在聘任仲裁员时，应从哪些人员中选聘？|仲裁委员会,聘任仲裁员,选聘人员"
+#  ],
+#  "count": 1,
+#  "msg": {
+#    "success": "操作成功",
+#    "fail": ""
+#  }
+#}
+#调用失败结果：{
+#  "code": 500,
+#  "content": [],
+#  "count": 0,
+#  "msg": {
+#    "success": "",
+#    "fail": "操作失败"
+#  }
+#}
+### 调用失败结果：
+### ！！！注意这个接口的query参数，第一个是用户的原始输入，第二个是实体关键词数组，用|隔开，这意味着，智能体平台在基于这个接口做工具之前，要先调用大模型将用户的原始输入转换成这个格式（第一个是用户的原始输入，第二个是实体关键词数组，用|隔开），参考提示词如下：
+
+### 提示词：
+从用户输入中提取出实体关键词，生成一个关键词数组，并将用户原始输入与该数组通过“|”符号拼接，形成一个查询字符串。格式如下：
+
+用户输入|用逗号隔开的实体关键词数组。
+
+举例如下：
+用户输入：介绍052D型驱逐舰的雷达系统。
+关键词数组：052D型驱逐舰,雷达系统
+生成的查询字符串：介绍052D型驱逐舰的雷达系统。|052D型驱逐舰,雷达系统
+
+
+### 4. 知识库重置
+POST http://app.bitleap.cn:8085/aisearch/knowledge/v3/reset
+Content-Type: application/json
+
+{
+  "from_id": "123456",
+  "from_nickname": "用户123456",
+  "content": {
+    "schema": "aiask_test_schema123"
+  }
+}
+
+### 4. 知识库重置(相比v2版本，v3版本新增了from_id,from_nickname,content这三个参数，用于标识调用者；同时支持指定schema)
+### 调用参数：{
+#  "from_id": "123456",      //用户id（随便写）
+#  "from_nickname": "用户123456", // 用户昵称（随便写）
+#  "content": {
+#    "schema": "test_schema" // 知识库schema，为了防止重复，可以生成一个随机英文字符，应用系统维护这个应用端中文知识库和英文schema名的对应关系
+#  }
+#}
+### 调用成功结果：{
+#  "code": 200,
+#  "content": [],
+#  "count": 0,
+#  "msg": {
+#    "success": "操作成功",
+#    "fail": ""
+#  }
+#}
+### 调用失败结果：{
+#  "code": 500,
+#  "content": [],
+#  "count": 0,
+#  "msg": {
+#    "success": "",
+#    "fail": "操作失败"
+#  }
+#}
+
+### 该接口会将服务端之前上传的文件删除，同时将数据库删除并重建。
+
+
+POST http://app.bitleap.cn:8085/aisearch/askgraph/select
+Content-Type: application/json
+
+{
+  "from_id": "guest",
+  "from_nickname": "guest",
+  "content": {
+    "schema": "aiask_test_schema123",
+    "schema_description": "文档",
+    "chat_type": "agent",
+    "is_streaming": true
+  }
+}
+
+### 1. 初始化，demo需要，参数随便填，后台目前只使用了 from_id 来标识用户身份
+# {
+#  "from_id": "guest",
+#  "from_nickname": "guest",
+#  "content": {
+#    "schema": "aiask_test_schema123",
+#    "schema_description": "文档",// 这是一个关于职业中介机构的文档
+#    "chat_type": "agent",
+#    "is_streaming": true
+#  }
+GET http://app.bitleap.cn:8085/aisearch/stream-graph-chat?id=guest&input=介绍websdb&query=123
+Accept: text/event-stream; charset=UTF-8
+Accept-Charset: UTF-8
+
