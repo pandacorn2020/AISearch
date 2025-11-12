@@ -12,7 +12,6 @@ public class KgProperties {
     private String url;
 
     private String inputDir;
-
     public String getModelName() {
         return modelName;
     }
@@ -44,4 +43,5 @@ public class KgProperties {
     public void setInputDir(String inputDir) {
         this.inputDir = inputDir;
     }
+
 }

@@ -8,7 +8,7 @@ import com.aisearch.llm.KgRelationshipDupRemovalTask;
 import com.aisearch.repository.*;
 import com.aisearch.service.DocumentLoader;
 import com.aisearch.service.GraphBuilder;
-import dev.langchain4j.model.chat.ChatLanguageModel;
+import dev.langchain4j.model.chat.ChatModel;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
@@ -298,7 +298,7 @@ public class KGGraph {
         watch = Stopwatch.createStarted();
         DocumentLoader documentLoader = graphBuilder.getDocumentLoader();
         String template = documentLoader.readKgDupRemovalPrompt();
-        ChatLanguageModel model = graphBuilder.getModel();
+        ChatModel model = graphBuilder.getModel();
         List<Callable> taskList = new ArrayList<>();
         for (KGEntity entity : mergedEntityList) {
             KgEntityDupRemovalTask task = new KgEntityDupRemovalTask(
@@ -342,7 +342,7 @@ public class KGGraph {
         DocumentLoader documentLoader = graphBuilder.getDocumentLoader();
         List<Callable> taskList = new ArrayList<>();
         String template = documentLoader.readKgDupRemovalPrompt();
-        ChatLanguageModel model = graphBuilder.getModel();
+        ChatModel model = graphBuilder.getModel();
         for (KGRelationship relationship : mergedRelationshipList) {
             KgRelationshipDupRemovalTask task = new KgRelationshipDupRemovalTask(
                     template, relationship, model);

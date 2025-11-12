@@ -11,7 +11,7 @@ import com.aisearch.util.FileConverter;
 import com.aisearch.util.JsonArrayToStringArray;
 import dev.langchain4j.data.message.SystemMessage;
 import dev.langchain4j.data.segment.TextSegment;
-import dev.langchain4j.model.chat.ChatLanguageModel;
+import dev.langchain4j.model.chat.ChatModel;
 import jakarta.transaction.Transactional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,7 +44,7 @@ public class GraphBuilder {
     private ExecutorService executorService;
     private String ragKgSystemPrompt;
     private String ragKgUserPrompt;
-    private ChatLanguageModel model;
+    private ChatModel model;
 
     public static final int BATCH_SIZE = 4;
 
@@ -69,7 +69,7 @@ public class GraphBuilder {
         return llmModel;
     }
 
-    public ChatLanguageModel getModel() {
+    public ChatModel getModel() {
         return model;
     }
 

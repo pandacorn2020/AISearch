@@ -11,6 +11,7 @@ public class QueryProperties {
 
     private String url;
 
+
     public String getModelName() {
         return modelName;
     }
@@ -34,4 +35,6 @@ public class QueryProperties {
     public void setUrl(String url) {
         this.url = url;
     }
+
+
 }

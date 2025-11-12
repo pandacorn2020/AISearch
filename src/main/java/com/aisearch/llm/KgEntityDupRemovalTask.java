@@ -4,12 +4,16 @@ import com.aisearch.entity.KGEntity;
 import dev.langchain4j.data.message.AiMessage;
 import dev.langchain4j.data.message.ChatMessage;
 import dev.langchain4j.data.message.UserMessage;
-import dev.langchain4j.model.chat.ChatLanguageModel;
+import dev.langchain4j.model.chat.ChatModel;
+import dev.langchain4j.model.chat.request.ChatRequest;
+import dev.langchain4j.model.chat.response.ChatResponse;
+import dev.langchain4j.model.openai.OpenAiChatRequestParameters;
 import dev.langchain4j.model.output.Response;
 import org.apache.commons.io.FileUtils;
 
 import java.io.File;
 import java.nio.charset.StandardCharsets;
+import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.logging.Logger;
 
@@ -18,13 +22,13 @@ public class KgEntityDupRemovalTask implements Callable<KGEntity> {
 
     private KGEntity entity;
 
-    private ChatLanguageModel model;
+    private ChatModel model;
 
     private Logger logger = Logger.getLogger(KgEntityDupRemovalTask.class.getSimpleName());
 
     public KgEntityDupRemovalTask(String dupRemovalTemplate,
                                   KGEntity entity,
-                                  ChatLanguageModel model) {
+                                  ChatModel model) {
         this.dupRemovalTemplate = dupRemovalTemplate;
         this.entity = entity;
         this.model = model;
@@ -42,14 +46,22 @@ public class KgEntityDupRemovalTask implements Callable<KGEntity> {
             String startTimeStr = String.format("%tF %<tT", startTime);
             FileUtils.writeStringToFile(new File("token_usage.log"), "request time:" + startTimeStr + "\n", StandardCharsets.UTF_8, true);
             System.out.println("请求开始了：");
-            Response<AiMessage> response = model.generate(userMessage);
+
+            OpenAiChatRequestParameters params = OpenAiChatRequestParameters.builder()
+                .customParameters(Map.of("enable_thinking", false))
+                .build();
+            ChatRequest chatRequest = ChatRequest.builder().parameters(params)
+                .messages(userMessage)
+                .build();
+
+            ChatResponse response = model.chat(chatRequest);
             System.out.println("请求结束了。");
             long endTime = System.currentTimeMillis();
             // 格式化时间字符串
             String endTimeStr = String.format("%tF %<tT", endTime);
             FileUtils.writeStringToFile(new File("token_usage.log"), "response time:" + endTimeStr + "\n", StandardCharsets.UTF_8, true);
 
-            String text = response.content().text();
+            String text = response.aiMessage().text();
             // 将 response.tokenUsage() 追加存储进一个指定的日志文件中，如果文件没有自动创建，文件有了，则追加存储
             FileUtils.writeStringToFile(new File("token_usage.log"), "response:" + text + "\n", StandardCharsets.UTF_8, true);
             FileUtils.writeStringToFile(new File("token_usage.log"), "token usage:" + response.tokenUsage().toString() + "\n", StandardCharsets.UTF_8, true);

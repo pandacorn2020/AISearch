@@ -3,8 +3,8 @@ package com.aisearch.llm;
 import com.aisearch.config.KgProperties;
 import com.aisearch.config.QueryProperties;
 import com.aisearch.config.ReportProperties;
-import dev.langchain4j.model.chat.ChatLanguageModel;
-import dev.langchain4j.model.chat.StreamingChatLanguageModel;
+import dev.langchain4j.model.chat.ChatModel;
+import dev.langchain4j.model.chat.StreamingChatModel;
 import dev.langchain4j.model.openai.OpenAiChatModel;
 import dev.langchain4j.model.openai.OpenAiStreamingChatModel;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,7 +26,7 @@ public class LLMModel {
     @Autowired
     private ReportProperties reportProperties;
 
-    public ChatLanguageModel buildKgModel() {
+    public ChatModel buildKgModel() {
         logger.log(java.util.logging.Level.INFO, "LLMModel.buildModel: url=" + kgProperties.getUrl() +
                 ", apiKey=" + kgProperties.getApiKey() +
                 ", modelName=" + kgProperties.getModelName());
@@ -35,7 +35,7 @@ public class LLMModel {
                 kgProperties.getModelName());
     }
 
-    public StreamingChatLanguageModel buildStreamingModel() {
+    public StreamingChatModel buildStreamingModel() {
         logger.log(java.util.logging.Level.INFO, "LLMModel.buildStreamingModel: url=" + queryProperties.getUrl() +
                 ", apiKey=" + queryProperties.getApiKey() +
                 ", modelName=" + queryProperties.getModelName());
@@ -44,7 +44,7 @@ public class LLMModel {
                 queryProperties.getModelName());
     }
 
-    public ChatLanguageModel buildQueryChatModel() {
+    public ChatModel buildQueryChatModel() {
         logger.log(java.util.logging.Level.INFO, "LLMModel.buildModel: url=" + queryProperties.getUrl() +
                 ", apiKey=" + queryProperties.getApiKey() +
                 ", modelName=" + queryProperties.getModelName());
@@ -53,7 +53,7 @@ public class LLMModel {
                 queryProperties.getModelName());
     }
 
-    public ChatLanguageModel buildModel(String url, String apiKey, String modelName) {
+    public ChatModel buildModel(String url, String apiKey, String modelName) {
         OpenAiChatModel.OpenAiChatModelBuilder builder = OpenAiChatModel.builder();
         if (url != null) {
             builder = builder.baseUrl(url);
@@ -65,7 +65,7 @@ public class LLMModel {
         return builder.build();
     }
 
-    public StreamingChatLanguageModel buildStreamingModel(String url, String apiKey,
+    public StreamingChatModel buildStreamingModel(String url, String apiKey,
                                                           String modelName) {
         OpenAiStreamingChatModel.OpenAiStreamingChatModelBuilder builder =
                 OpenAiStreamingChatModel.builder();

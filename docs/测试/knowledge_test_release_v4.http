@@ -9,10 +9,10 @@ Content-Disposition: form-data; name="schema"
 aiask_test_schema
 
 ------WebKitFormBoundary7MA4YWxkTrZu0gW
-Content-Disposition: form-data; name="file"; filename="123.pptx"
+Content-Disposition: form-data; name="file"; filename="2.docx"
 Content-Type: application/octet-stream
 
-< C:\Users\FENG\Desktop\tmp0812\合肥\大数据智算底座安全解决方案20251104.pptx
+< I:\aisearch\release_0623002\release_0623002\knowledge\test_speed\2.docx
 ------WebKitFormBoundary7MA4YWxkTrZu0gW--
 // 新增一个schema参数
 

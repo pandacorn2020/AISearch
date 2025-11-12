@@ -19,7 +19,7 @@ import dev.langchain4j.agent.tool.ToolExecutionRequest;
 import dev.langchain4j.data.message.*;
 import dev.langchain4j.memory.ChatMemory;
 import dev.langchain4j.memory.chat.MessageWindowChatMemory;
-import dev.langchain4j.model.chat.StreamingChatLanguageModel;
+import dev.langchain4j.model.chat.StreamingChatModel;
 import dev.langchain4j.model.output.Response;
 import dev.langchain4j.service.AiServices;
 import dev.langchain4j.service.TokenStream;
@@ -88,7 +88,7 @@ public class StreamingChatController {
     public static final String ENTITIES = "entities";
     public static final String QUERY = "query";
     public static final String NEXT = "next";
-    //    private static StreamingChatLanguageModel streamingChatModel;
+    //    private static StreamingChatModel streamingChatModel;
 //
 //    private static String systemPrompt;
 //
@@ -369,7 +369,7 @@ public class StreamingChatController {
                 ChatMessage[] chatHistory = (ChatMessage[]) userData.get(KEY_HISTORY);
 
                 String systemPrompt = documentLoader.readSystemPrompt();
-                StreamingChatLanguageModel streamingChatModel = llmModel.buildStreamingModel();
+                StreamingChatModel streamingChatModel = llmModel.buildStreamingModel();
                 ChatMemory chatMemory = MessageWindowChatMemory.withMaxMessages(10);
                 SystemMessage sysMessage = systemMessage(systemPrompt);
 
@@ -380,7 +380,7 @@ public class StreamingChatController {
                 MeasureTools measureTools = new MeasureTools(sessionData, graphSearch, (String) userData.get(KEY_KEY_SCHEMA));
 
                 StreamingChatController.Assistant assistant = AiServices.builder(StreamingChatController.Assistant.class)
-                        .streamingChatLanguageModel(streamingChatModel)
+                        .streamingChatModel(streamingChatModel)
                         .chatMemory(chatMemory)
                         .tools(measureTools)
                         .build();
@@ -389,8 +389,8 @@ public class StreamingChatController {
                 StringBuilder reportString = new StringBuilder();
 
                 assistant.chat(input)
-                        .onNext(message -> handleOnNext(message, emitter, reportString))
-                        .onComplete(aiMessageResponse -> handleOnComplete(emitter, chatMemory, userData, input,
+                        .onPartialResponse(message -> handleOnNext(message, emitter, reportString))
+                        .onCompleteResponse(aiMessageResponse -> handleOnComplete(emitter, chatMemory, userData, input,
                                 startTime, beginLlmRequestStart, reportString.toString()))
                         .onError(throwable -> {
                             logger.warning("Error occurred: " + throwable.getMessage());

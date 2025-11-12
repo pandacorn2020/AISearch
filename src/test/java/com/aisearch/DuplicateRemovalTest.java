@@ -4,7 +4,8 @@ import com.aisearch.llm.LLMModel;
 import dev.langchain4j.data.message.AiMessage;
 import dev.langchain4j.data.message.ChatMessage;
 import dev.langchain4j.data.message.UserMessage;
-import dev.langchain4j.model.chat.ChatLanguageModel;
+import dev.langchain4j.model.chat.ChatModel;
+import dev.langchain4j.model.chat.response.ChatResponse;
 import dev.langchain4j.model.output.Response;
 import org.junit.jupiter.api.Test;
 
@@ -27,12 +28,12 @@ public class DuplicateRemovalTest {
     public void test() {
         String s = "非酒精性脂肪肝（NAFL）是非酒精性脂肪性肝病的一种形式，主要表现为肝脏脂肪堆积但无明显炎症或纤维化。 与饮酒无关的肝脏脂肪堆积，通常无明显症状 非酒精性脂肪肝（NAFLD）是一种由肝脏脂肪堆积引起的疾病，常见于肥胖、糖尿病患者，可能导致肝炎、纤维化甚至肝硬化。";
         LLMModel llmModel = new LLMModel();
-        ChatLanguageModel model = llmModel.buildModel("https://dashscope.aliyuncs.com/compatible-mode/v1",
+        ChatModel model = llmModel.buildModel("https://dashscope.aliyuncs.com/compatible-mode/v1",
                 "sk-9cc9dbdd16b3488e9edb1cbad7ea695a", "qwen-plus");
         String message = prompt.formatted(s);
         ChatMessage userMessage = UserMessage.userMessage(message);
-        Response<AiMessage> response = model.generate(userMessage);
-        String text = response.content().text();
+        ChatResponse response = model.chat(userMessage);
+        String text = response.aiMessage().text();
         System.out.println(text);
     }
 }
