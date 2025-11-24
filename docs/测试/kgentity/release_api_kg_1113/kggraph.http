@@ -1,5 +1,5 @@
 // getAll
-GET http://111.231.63.161:8085/api/graph/aiask_test_schema/第七十六条?depth=2
+GET http://111.231.63.161:8085/api/graph/aiask_1762018007897871/WebSDP?depth=1
 
 Accept: application/json
 

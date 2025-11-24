@@ -1,5 +1,5 @@
 // getAll
-GET http://localhost:8080/api/graph/aiask_test_schema/第七十六条?depth=2
+GET http://localhost:8080/api/graph/aiask_test_schema/医疗关键领域融合?depth=1
 
 Accept: application/json
 

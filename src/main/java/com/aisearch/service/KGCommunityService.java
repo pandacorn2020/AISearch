@@ -10,6 +10,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
@@ -42,7 +43,7 @@ public class KGCommunityService {
         jdbcTemplate.execute("USE " + schema);
         return repository.save(community);
     }
-
+    @Transactional
     public void deleteById(String schema,Long id) {
         String sql = String.format("DELETE FROM %s.kgcommunity WHERE id = ?", schema);
         int rows = jdbcTemplate.update(sql, id);

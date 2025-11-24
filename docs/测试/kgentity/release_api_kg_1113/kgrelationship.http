@@ -1,5 +1,5 @@
 // getAll
-GET http://111.231.63.161:8085/api/relationship?schema=aiask_1762260263637207&page=0&size=10&sortBy=description&direction=desc
+GET http://111.231.63.161:8085/api/relationship?schema=aiask_1762018007897871&page=0&size=10&sortBy=description&direction=desc
 Accept: application/json
 
 
@@ -11,7 +11,7 @@ Accept: application/json
 #        @RequestParam(defaultValue = "fileName") String sortBy,
 #        @RequestParam(defaultValue = "asc") String direction)
 
-GET http://111.231.63.161:8085/api/relationship/aiask_test_schema/仲裁委员会/仲裁庭纪律/制定
+GET http://111.231.63.161:8085/api/relationship/aiask_1762018007897871/WebSDP/SDP/基于
 Accept: application/json
 ###    @GetMapping("/{schema}/{source}/{target}/{relation}")
 #    public KGRelationship getRelationshipById(@PathVariable String schema,@PathVariable String source, @PathVariable String target, @PathVariable String relation)
@@ -48,7 +48,7 @@ Content-Type: application/json
 #    public KGRelationship updateRelationship(@PathVariable String schema,@PathVariable String source, @PathVariable String target, @PathVariable String relation, @RequestBody KGRelationship relationship)
 
 // 删除
-DELETE http://111.231.63.161:8085/api/relationship/仲裁员/人身财产安全/保障
+DELETE http://111.231.63.161:8085/api/relationship/aiask_1762018007897871/WebSDP/SDP/基于
 
 Accept: application/json
 

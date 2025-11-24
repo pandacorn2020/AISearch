@@ -48,7 +48,7 @@ Content-Type: application/json
 #    public KGRelationship updateRelationship(@PathVariable String schema,@PathVariable String source, @PathVariable String target, @PathVariable String relation, @RequestBody KGRelationship relationship)
 
 // 删除
-DELETE http://localhost:8080/api/relationship/仲裁员/人身财产安全/保障
+DELETE http://localhost:8080/api/relationship/aiask_test_schema/知心管家app/医疗关键领域融合/应用
 
 Accept: application/json
 

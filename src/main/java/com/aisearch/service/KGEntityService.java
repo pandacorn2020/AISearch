@@ -10,6 +10,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
 
@@ -39,7 +40,7 @@ public class KGEntityService {
         jdbcTemplate.execute("USE " + schema);
         return repository.save(entity);
     }
-
+    @Transactional
     public void deleteById(String schema, String name) {
         String sql = String.format("DELETE FROM %s.kgentity WHERE name = ?", schema);
         int rows = jdbcTemplate.update(sql, name);

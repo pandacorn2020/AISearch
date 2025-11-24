@@ -1,5 +1,5 @@
 // getAll
-GET http://localhost:8080/api/entity?schema=aiask_1762260263637207&page=0&size=10&orderBy=name&direction=ASC
+GET http://localhost:8080/api/entity?schema=aiask_test_schema&page=0&size=10&orderBy=name&direction=ASC
 Accept: application/json
 
 
@@ -12,7 +12,7 @@ Accept: application/json
 #        @RequestParam(defaultValue = "asc") String direction
 
 
-GET http://localhost:8080/api/entity/aiask_test_schema/测试实体
+GET http://localhost:8080/api/entity/aiask_test_schema/医疗关键领域融合
 Accept: application/json
 
 

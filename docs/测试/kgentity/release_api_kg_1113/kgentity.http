@@ -12,7 +12,7 @@ Accept: application/json
 #        @RequestParam(defaultValue = "asc") String direction
 
 
-GET http://111.231.63.161:8085/api/entity/aiask_test_schema/测试实体
+GET http://111.231.63.161:8085/api/entity/aiask_1762018007897871/WebSDP
 Accept: application/json
 
 

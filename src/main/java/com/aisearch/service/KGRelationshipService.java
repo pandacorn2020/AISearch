@@ -11,6 +11,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
@@ -42,13 +43,16 @@ public class KGRelationshipService {
         return repository.save(relationship);
     }
 
-    public void deleteById(String schema,KGRelationshipKey id) {
+    @Transactional
+    public void deleteById(String schema,KGRelationshipKey key) {
 
-        String sql = String.format("DELETE FROM %s.kgrelationship WHERE id = ?", schema);
-        int rows = jdbcTemplate.update(sql, id);
+        String sql = String.format("DELETE FROM %s.kgrelationship WHERE source = ? and target = ? and relation = ?", schema);
+        int rows = jdbcTemplate.update(sql, key.getSource(), key.getTarget(),key.getRelation());
 
         if (rows == 0) {
-            throw new ResourceNotFoundException("Kgrelationship with ID " + id + " not found");
+            throw new ResourceNotFoundException(
+                "Relationship not found: " + key.getSource() + " / " + key.getRelation() + " / " + key.getTarget()
+            );
         }
 
     }
