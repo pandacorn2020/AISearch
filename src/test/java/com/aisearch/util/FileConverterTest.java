@@ -12,9 +12,9 @@ public class FileConverterTest {
     @Test
     public void testConvertPdfToText() {
         try {
-            InputStream is = DocumentLoader.getInputStream("china-economic-monitor-q2-2024.pdf");
+            InputStream is = DocumentLoader.getInputStream("123.pptx");
             FileService fileService = new FileService();
-            String text = fileService.convertFileToText(is, "test");
+            String text = fileService.convertFileToText(is, "test.pptx");
             System.out.println(text);
             Assertions.assertTrue(text.contains("一季度中国GDP"));
             Assertions.assertTrue(text.contains("国家药品监督管理局发布"));

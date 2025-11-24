@@ -1,0 +1,11 @@
+// getAll
+GET http://localhost:8080/api/graph/aiask_test_schema/第七十六条?depth=2
+
+Accept: application/json
+
+### 根据实体名称和图谱深度来检索实体和关系
+#    @GetMapping("/{schema}/{entityName}")
+#    public Map<String, Object> getRelatedEntities(
+#        @PathVariable String schema,
+#        @PathVariable String entityName,
+#        @RequestParam(defaultValue = "1") int depth

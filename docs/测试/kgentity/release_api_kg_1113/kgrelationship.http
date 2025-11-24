@@ -1,0 +1,56 @@
+// getAll
+GET http://111.231.63.161:8085/api/relationship?schema=aiask_1762260263637207&page=0&size=10&sortBy=description&direction=desc
+Accept: application/json
+
+
+###    @GetMapping
+#    public Page<KGRelationship> getAllRelationships(
+#        @RequestParam String schema,
+#        @RequestParam(defaultValue = "0") int page,
+#        @RequestParam(defaultValue = "10") int size,
+#        @RequestParam(defaultValue = "fileName") String sortBy,
+#        @RequestParam(defaultValue = "asc") String direction)
+
+GET http://111.231.63.161:8085/api/relationship/aiask_test_schema/仲裁委员会/仲裁庭纪律/制定
+Accept: application/json
+###    @GetMapping("/{schema}/{source}/{target}/{relation}")
+#    public KGRelationship getRelationshipById(@PathVariable String schema,@PathVariable String source, @PathVariable String target, @PathVariable String relation)
+
+// 创建
+
+POST http://111.231.63.161:8085/api/relationship/aiask_test_schema
+Content-Type: application/json
+
+{
+  "id": {
+    "source": "仲裁2委员会",
+    "target": "仲裁庭2纪律",
+    "relation": "制2定"
+  },
+  "description": "仲裁委员会制定仲裁庭纪律，规范仲裁庭成员在庭审过程中的行为",
+  "fileName": "3.docx"
+}
+
+###    @PostMapping("/{schema}")
+#    public KGRelationship createRelationship(@PathVariable String schema,@RequestBody KGRelationship relationship
+
+// 更新
+PUT http://111.231.63.161:8085/api/relationship/aiask_test_schema/仲裁员/人身财产安全/保障
+Content-Type: application/json
+
+{
+
+  "description": "仲裁委员会制ddd定仲裁庭纪律，规范仲裁庭成员在庭审过程中的行为。更新后的描述信息。",
+  "fileName": "3.docx"
+}
+
+###    @PutMapping("/{schema}/{source}/{target}/{relation}")
+#    public KGRelationship updateRelationship(@PathVariable String schema,@PathVariable String source, @PathVariable String target, @PathVariable String relation, @RequestBody KGRelationship relationship)
+
+// 删除
+DELETE http://111.231.63.161:8085/api/relationship/仲裁员/人身财产安全/保障
+
+Accept: application/json
+
+###     @DeleteMapping("/{schema}/{source}/{target}/{relation}")
+#    public void deleteRelationship(@PathVariable String schema,@PathVariable String source, @PathVariable String target, @PathVariable String relation)

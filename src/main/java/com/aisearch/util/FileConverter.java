@@ -1,9 +1,15 @@
 package com.aisearch.util;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.poi.hslf.usermodel.HSLFShape;
+import org.apache.poi.hslf.usermodel.HSLFSlideShow;
+import org.apache.poi.hslf.usermodel.HSLFTextShape;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.hwpf.HWPFDocument;
 import org.apache.poi.hwpf.extractor.WordExtractor;
+import org.apache.poi.xslf.usermodel.XMLSlideShow;
+import org.apache.poi.xslf.usermodel.XSLFShape;
+import org.apache.poi.xslf.usermodel.XSLFTextShape;
 import org.apache.poi.xwpf.usermodel.XWPFDocument;
 import org.apache.poi.xwpf.extractor.XWPFWordExtractor;
 import org.apache.poi.ss.usermodel.*;
@@ -33,7 +39,10 @@ public class FileConverter {
             return convertWordToText(inputStream, fileName);
         } else if (fileName.endsWith(".xls") || fileName.endsWith(".xlsx")) {
             return convertExcelToText(inputStream, fileName);
-        } else {
+        } else if (fileName.endsWith(".ppt") || fileName.endsWith(".pptx")) {
+            return convertPptToText(inputStream, fileName);
+
+        }else {
             // read input stream as text
             return new String(inputStream.readAllBytes(), "UTF-8");
         }
@@ -139,6 +148,59 @@ public class FileConverter {
                 return "";
         }
     }
+
+    public static String convertPptToText(InputStream inputStream, String fileName) throws IOException {
+        if (fileName.endsWith(".pptx")) {
+            // PPTX 文件
+            try (XMLSlideShow ppt = new XMLSlideShow(inputStream)) {
+                StringBuilder sb = new StringBuilder();
+                int slideNum = 1;
+
+                for (var slide : ppt.getSlides()) {
+                    sb.append("=== Slide ").append(slideNum).append(" ===\n");
+
+                    for (XSLFShape shape : slide.getShapes()) {
+                        if (shape instanceof XSLFTextShape) {
+                            String text = ((XSLFTextShape) shape).getText();
+                            if (text != null && !text.isBlank()) {
+                                sb.append(text).append("\n");
+                            }
+                        }
+                    }
+
+                    slideNum++;
+                }
+
+                return sb.toString();
+            }
+        } else if (fileName.endsWith(".ppt")) {
+            // PPT 老格式
+            try (HSLFSlideShow ppt = new HSLFSlideShow(inputStream)) {
+                StringBuilder sb = new StringBuilder();
+                int slideNum = 1;
+
+                for (var slide : ppt.getSlides()) {
+                    sb.append("=== Slide ").append(slideNum).append(" ===\n");
+
+                    for (HSLFShape shape : slide.getShapes()) {
+                        if (shape instanceof HSLFTextShape) {
+                            String text = ((HSLFTextShape) shape).getText();
+                            if (text != null && !text.isBlank()) {
+                                sb.append(text).append("\n");
+                            }
+                        }
+                    }
+
+                    slideNum++;
+                }
+
+                return sb.toString();
+            }
+        } else {
+            throw new IllegalArgumentException("The specified file is not a PPT document");
+        }
+    }
+
 
     public static void main(String[] args) {
         try {

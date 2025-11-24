@@ -56,8 +56,6 @@ import static dev.langchain4j.data.message.SystemMessage.systemMessage;
 @SessionAttributes(value = {"statement", "connection"})
 @RequestMapping("/aisearch")
 public class StreamingChatController {
-    //    private static String server = "36.112.210.194:19708";
-    private static String server = "127.0.0.1:1978";
 
     private static CloudConnection conn;
     private static CloudStatement stmt;
@@ -341,6 +339,7 @@ public class StreamingChatController {
 
         } catch (Exception e) {
             logger.warning("Error occurred: " + e.getMessage());
+            logger.log( Level.SEVERE, "(line:342)LLM 调用发生错误: ", e);
             emitter.completeWithError(e);
         }
 
@@ -394,10 +393,13 @@ public class StreamingChatController {
                                 startTime, beginLlmRequestStart, reportString.toString()))
                         .onError(throwable -> {
                             logger.warning("Error occurred: " + throwable.getMessage());
+                            logger.log( Level.SEVERE, "(line:396)LLM 调用发生错误: ", throwable);
+
                             emitter.complete();
                         }).start();
             } catch (Exception e) {
                 logger.warning("Error occurred: " + e.getMessage());
+                logger.log( Level.SEVERE, "(line:402)LLM 调用发生错误: ", e);
                 emitter.completeWithError(e);
             }
         });

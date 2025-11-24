@@ -1,0 +1,55 @@
+// getAll
+GET http://localhost:8080/api/entity?schema=aiask_1762260263637207&page=0&size=10&orderBy=name&direction=ASC
+Accept: application/json
+
+
+###    @GetMapping
+#    public Page<KGEntity> getAll(
+#        @RequestParam String schema,
+#        @RequestParam(defaultValue = "0") int page,
+#        @RequestParam(defaultValue = "10") int size,
+#        @RequestParam(defaultValue = "name") String sortBy,
+#        @RequestParam(defaultValue = "asc") String direction
+
+
+GET http://localhost:8080/api/entity/aiask_test_schema/测试实体
+Accept: application/json
+
+
+###@GetMapping("/{schema}/{name}")
+ #   public KGEntity getById(@PathVariable String schema,@PathVariable String name)
+
+// 创建
+POST http://localhost:8080/api/entity/aiask_test_schema
+Content-Type: application/json
+
+{
+  "name": "测试实体",
+  "description": "这是一个用于测试的实体",
+  "type": "这是一个用于测试的实体",
+  "fileName": "2.docx"
+}
+
+###    @PostMapping("/{schema}")
+#    public KGEntity create(@PathVariable String schema,@RequestBody KGEntity entity)
+
+// 更新
+PUT http://localhost:8080/api/entity/aiask_test_schema/测试实体
+Content-Type: application/json
+
+{
+  "name": "测试实体",
+  "description": "这实7777222222体",
+  "type": "这是一个更新后的测试实体",
+  "fileName": "2.docx"
+}
+
+###     @PutMapping("/{schema}/{name}")
+#    public KGEntity update(@PathVariable String schema,@PathVariable String name, @RequestBody KGEntity entity
+
+// 删除
+DELETE http://localhost:8080/api/entity/aiask_test_schema/测试实体
+Accept: application/json
+
+###     @DeleteMapping("/{schema}/{name}")
+#    public void delete(@PathVariable String schema,@PathVariable String name)

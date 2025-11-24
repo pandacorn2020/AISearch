@@ -14,6 +14,9 @@ public class KGRelationship {
 
     private String description;
 
+
+
+    @Column(name = "file_name",columnDefinition = "TEXT")
     private String fileName;
 
     @Transient

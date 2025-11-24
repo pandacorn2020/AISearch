@@ -1,0 +1,51 @@
+// getAll
+GET http://localhost:8080/api/segment?schema=aiask_test_schema&page=0&size=2&sortBy=id&direction=asc
+Accept: application/json
+
+
+###    @GetMapping
+#    public Page<KGSegment> getAllSegments(
+#        @RequestParam String schema,
+#        @RequestParam(defaultValue = "0") int page,
+#        @RequestParam(defaultValue = "10") int size,
+#        @RequestParam(defaultValue = "id") String sortBy,
+#        @RequestParam(defaultValue = "asc") String direction)
+
+GET http://localhost:8080/api/segment/aiask_test_schema/12
+Accept: application/json
+###    @GetMapping("/{schema}/{id}")
+#    public KGSegment getSegmentById(@PathVariable String schema,@PathVariable Long id)
+
+
+// 创建
+POST http://localhost:8080/api/segment/aiask_test_schema
+Content-Type: application/json
+
+{
+  "segment": "测试分段",
+  "fileName": "4.docx"
+}
+
+###    @PostMapping("/{schema}")
+#    public KGSegment createSegment(@PathVariable String schema,@RequestBody KGSegment segment)
+
+// 更新
+
+PUT http://localhost:8080/api/segment/aiask_test_schema/12
+Content-Type: application/json
+
+{
+  "segment": "测试分777段更新",
+  "fileName": "4.docx"
+}
+
+
+###    @PutMapping("/{schema}/{id}")
+#    public KGSegment updateSegment(@PathVariable String schema,@PathVariable Long id, @RequestBody KGSegment segment)
+
+// 删除
+DELETE http://localhost:8080/api/segment/aiask_test_schema/12
+Accept: application/json
+
+###     @DeleteMapping("/{schema}/{id}")
+#    public void deleteSegment(@PathVariable String schema,@PathVariable Long id)

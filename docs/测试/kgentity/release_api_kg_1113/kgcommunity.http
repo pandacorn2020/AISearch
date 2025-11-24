@@ -1,0 +1,54 @@
+// getAll
+GET http://111.231.63.161:8085/api/community?schema=aiask_1762260263637207&page=0&size=10&orderBy=id&direction=ASC
+Accept: application/json
+
+
+###    @GetMapping
+#    public Page<KGCommunity> getAll(
+#        @RequestParam String schema,
+#        @RequestParam(defaultValue = "0") int page,
+#        @RequestParam(defaultValue = "10") int size,
+#        @RequestParam(defaultValue = "id") String sortBy,
+#        @RequestParam(defaultValue = "asc") String direction
+
+#返回示例：
+
+
+GET http://111.231.63.161:8085/api/community/aiask_test_schema/10
+Accept: application/json
+
+
+###    @GetMapping("/{schema}/{id}")
+#    public KGCommunity getCommunityById(@PathVariable String schema,@PathVariable Long id)
+
+
+// 创建
+POST http://111.231.63.161:8085/api/community/aiask_test_schema
+Content-Type: application/json
+
+{
+  "name": "测试社区",
+  "summary": "这是一个用于测试的社区"
+}
+
+###    @PostMapping("/{schema}")
+#    public KGCommunity createCommunity(@PathVariable String schema,@RequestBody KGCommunity community
+
+// 更新
+PUT http://111.231.63.161:8085/api/community/aiask_test_schema/10
+Content-Type: application/json
+
+{
+  "name": "测试社区",
+  "summary": "这是一个用于测试的社区2222"
+}
+
+###     @PutMapping("/{schema}/{id}")
+#    public KGCommunity updateCommunity(@PathVariable String schema,@PathVariable Long id, @RequestBody KGCommunity community)
+
+// 删除
+DELETE http://111.231.63.161:8085/api/community/aiask_test_schema/10
+Accept: application/json
+
+###     @DeleteMapping("/{schema}/{id}")
+#    public void deleteCommunity(@PathVariable String schema,@PathVariable Long id)

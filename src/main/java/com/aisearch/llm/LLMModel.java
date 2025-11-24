@@ -75,6 +75,8 @@ public class LLMModel {
         builder = builder.apiKey(apiKey)
                 .modelName(modelName);
         builder.timeout(Duration.ofSeconds(3600));
+        builder.logRequests(true);
+        builder.logResponses(true);
         return builder.build();
     }
 

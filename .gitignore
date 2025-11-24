@@ -5,3 +5,6 @@ target/
 nbactions.xml
 nbproject/
 out0.txt
+/build/
+/spring.log*
+

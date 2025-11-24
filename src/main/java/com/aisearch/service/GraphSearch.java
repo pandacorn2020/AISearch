@@ -1,5 +1,8 @@
 package com.aisearch.service;
 
+import com.aisearch.config.CloudwaveProperties;
+import com.aisearch.config.DataSourceProperties;
+import com.aisearch.config.QueryProperties;
 import com.aisearch.config.WebserverProperties;
 import com.aisearch.entity.*;
 import com.aisearch.llm.LLMModel;
@@ -33,6 +36,9 @@ public class GraphSearch {
     @Autowired
     private WebserverProperties webServerProperties;
 
+    @Autowired
+    private CloudwaveProperties cloudwaveProperties;
+
     public static final int RELATIONSHIP_MAX_SIZE = 128;
     public static final int DOC_SEGMENT_MAX_SIZE = 6;
 
@@ -59,7 +65,11 @@ public class GraphSearch {
     public void loadGraphs() {
         try {
 
-            CloudConnection connection = (CloudConnection) DBConnectionHelper.connect("127.0.0.1", "system", "CHANGEME");
+            // 从配置文件spring.datasource.url读取数据地址
+
+
+
+            CloudConnection connection = (CloudConnection) DBConnectionHelper.connect(cloudwaveProperties.getServer(), cloudwaveProperties.getUser(),cloudwaveProperties.getPassword());
             connection.setAutoCommit(false);
             CloudDatabaseMetaData meta = (CloudDatabaseMetaData) connection.getMetaData();
             CloudResultSet result = (CloudResultSet) meta.getSchemas();

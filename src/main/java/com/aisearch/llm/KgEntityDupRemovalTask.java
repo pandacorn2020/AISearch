@@ -10,12 +10,13 @@ import dev.langchain4j.model.chat.response.ChatResponse;
 import dev.langchain4j.model.openai.OpenAiChatRequestParameters;
 import dev.langchain4j.model.output.Response;
 import org.apache.commons.io.FileUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.concurrent.Callable;
-import java.util.logging.Logger;
 
 public class KgEntityDupRemovalTask implements Callable<KGEntity> {
     private String dupRemovalTemplate;
@@ -24,7 +25,7 @@ public class KgEntityDupRemovalTask implements Callable<KGEntity> {
 
     private ChatModel model;
 
-    private Logger logger = Logger.getLogger(KgEntityDupRemovalTask.class.getSimpleName());
+    private static final Logger logger = LoggerFactory.getLogger(KgEntityDupRemovalTask.class.getSimpleName());
 
     public KgEntityDupRemovalTask(String dupRemovalTemplate,
                                   KGEntity entity,
@@ -44,8 +45,6 @@ public class KgEntityDupRemovalTask implements Callable<KGEntity> {
             long startTime = System.currentTimeMillis();
             // 格式化时间字符串
             String startTimeStr = String.format("%tF %<tT", startTime);
-            FileUtils.writeStringToFile(new File("token_usage.log"), "request time:" + startTimeStr + "\n", StandardCharsets.UTF_8, true);
-            System.out.println("请求开始了：");
 
             OpenAiChatRequestParameters params = OpenAiChatRequestParameters.builder()
                 .customParameters(Map.of("enable_thinking", false))
@@ -54,23 +53,20 @@ public class KgEntityDupRemovalTask implements Callable<KGEntity> {
                 .messages(userMessage)
                 .build();
 
+            logger.info("实体去重任务 +1.");
             ChatResponse response = model.chat(chatRequest);
-            System.out.println("请求结束了。");
             long endTime = System.currentTimeMillis();
             // 格式化时间字符串
             String endTimeStr = String.format("%tF %<tT", endTime);
-            FileUtils.writeStringToFile(new File("token_usage.log"), "response time:" + endTimeStr + "\n", StandardCharsets.UTF_8, true);
 
             String text = response.aiMessage().text();
             // 将 response.tokenUsage() 追加存储进一个指定的日志文件中，如果文件没有自动创建，文件有了，则追加存储
-            FileUtils.writeStringToFile(new File("token_usage.log"), "response:" + text + "\n", StandardCharsets.UTF_8, true);
-            FileUtils.writeStringToFile(new File("token_usage.log"), "token usage:" + response.tokenUsage().toString() + "\n", StandardCharsets.UTF_8, true);
             long costTime = endTime - startTime;
-            System.out.println("cost time: " + costTime + "ms");
-            // 写入到日志
-            FileUtils.writeStringToFile(new File("token_usage.log"), "cost time:" + costTime + "ms\n", StandardCharsets.UTF_8, true);
-            System.out.println(response.tokenUsage());
-            logger.log(java.util.logging.Level.INFO, "Dup removal response: " + text + ", original text: " + entity.getDescription());
+
+
+
+            logger.info("systemMessage：{}\n userMessage：{}\n答复：{}\n开始时间：{}, 结束时间：{}, 耗时：{}ms, 输入token数：{}, 输出token数：{}",
+                "",userMessage, text, startTimeStr, endTimeStr, costTime, response.tokenUsage().inputTokenCount(), response.tokenUsage().outputTokenCount());
             entity.setDescription(text);
             return entity;
         } catch (Throwable t) {
