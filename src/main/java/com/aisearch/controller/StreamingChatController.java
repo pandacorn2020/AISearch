@@ -76,27 +76,9 @@ public class StreamingChatController {
 
     public static String RAG_QUERY= "ragQuery";
 
-
-    public static final String INPUT = "input";
-    public static final String CHAT_HISTORY = "chatHistory";
-    public static final String CHAT = "chat";
-    public static final String SECONDARY = "secondary";
-    public static final String HISTORY = "history";
-    public static final String TOKEN = "token";
-    public static final String ENTITIES = "entities";
-    public static final String QUERY = "query";
-    public static final String NEXT = "next";
-    //    private static StreamingChatModel streamingChatModel;
-//
-//    private static String systemPrompt;
-//
-//    private static String secondaryPrompt;
-//
     @Autowired
     private GraphSearch graphSearch;
 
-    // create timed out cache
-    private static final int CHAT_TIMEOUT_SECONDS = 300;
 
     @Autowired
     private ExecutorService executorService;  // 假设你有一个线程池
@@ -389,6 +371,11 @@ public class StreamingChatController {
 
                 assistant.chat(input)
                         .onPartialResponse(message -> handleOnNext(message, emitter, reportString))
+                    .onPartialThinkingWithContext(((message_thinking,context) -> {
+                            String thinkingMessage = "[思考] " + message_thinking  + "\n";
+                            System.out.println(thinkingMessage);
+//                            handleOnNext(thinkingMessage, emitter, reportString);
+                        }))
                         .onCompleteResponse(aiMessageResponse -> handleOnComplete(emitter, chatMemory, userData, input,
                                 startTime, beginLlmRequestStart, reportString.toString()))
                         .onError(throwable -> {
@@ -440,70 +427,9 @@ public class StreamingChatController {
         }
     }
 
-    private static ToolExecutionResultMessage buildToolExecutionResultMessage(String message) {
-        int index = message.indexOf("id = ");
-        int index1 = message.indexOf("toolName = ", index + 1);
-        int index2 = message.indexOf("text = ", index1 + 1);
-        String id = unquoted(message.substring(index + 6, index1 - 3).trim());
-        String toolName = unquoted(message.substring(index1 + 11, index2 - 3).trim());
-        String text = unquoted(message.substring(index2 + 8, message.length() - 2).trim());
-        return new ToolExecutionResultMessage(id, toolName, text);
-    }
 
-    private static UserMessage buildUserMessage(String message) {
-        int index = message.indexOf(" name = ");
-        if (index > 0) {
-            int index1 = message.indexOf(" contents = ", index + 1);
-            String name = message.substring(index + 8, index1 - 1).trim();
-            if (name.startsWith("\"") && name.endsWith("\"")) {
-                name = name.substring(1, name.length() - 1);
-            }
-            String content = message.substring(index1 + 12, message.length() - 2).trim();
-            content = content.substring(1, content.length() - 1);
-            return UserMessage.userMessage(name, content);
-        } else {
-            return UserMessage.userMessage(message);
-        }
-    }
 
-    private static AiMessage buildAiMessage(String message) {
-        int index = message.indexOf("text = ");
-        int index1 = message.indexOf("toolExecutionRequests = ", index + 1);
-        String text = message.substring(index + 8, index1 - 3).trim();
-        String tools = message.substring(index1 + 24, message.length() - 2).trim();
-        if (tools.equals("null")) {
-            return AiMessage.from(text);
-        }
-        index = tools.indexOf("ToolExecutionRequest {");
-        List<ToolExecutionRequest> toolList = new ArrayList<>();
-        while (index > 0) {
-            int index2 = tools.indexOf("}", index + 1);
-            String tool = tools.substring(index, index2 + 1);
-            toolList.add(buildToolExecutionRequest(tool));
-            index = tools.indexOf("ToolExecutionRequest {", index + 1);
-        }
-        return new AiMessage(text, toolList);
-    }
 
-    private static ToolExecutionRequest buildToolExecutionRequest(String tool) {
-        int index = tool.indexOf("id = ");
-        int index1 = tool.indexOf("name = ", index + 1);
-        int index2 = tool.indexOf("arguments = ", index1 + 1);
-        String id = unquoted(tool.substring(index + 6, index1 - 3).trim());
-        String name = unquoted(tool.substring(index1 + 8, index2 - 3).trim());
-        String arguments = unquoted(tool.substring(index2 + 13, tool.length() - 2).trim());
-        return ToolExecutionRequest.builder().id(id).name(name).arguments(arguments).build();
-    }
-
-    private static String unquoted(String str) {
-        if (str.equals("null")) {
-            return null;
-        }
-        if (str.startsWith("'") && str.endsWith("'")) {
-            return str.substring(1, str.length() - 1);
-        }
-        return str;
-    }
 
     private ChatMessage[] getChatHistory(ChatMemory chatMemory) {
         if (chatMemory == null) {

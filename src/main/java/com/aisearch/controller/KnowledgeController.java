@@ -90,11 +90,145 @@ public class KnowledgeController {
             Files.createDirectories(path.getParent());
             Files.write(path, bytes);
 
+            msg.setSuccess("文件上传成功（该v3接口已弃用，请迁移至v4接口(/v4/upload)）");
+            resp.setMsg(msg);
+            resp.setCode(200);
+            resp.setContent(new String[]{});
+            resp.setCount(0);
+            logger.info("即将启动知识库构建线程（该v3接口已弃用，请迁移至v4接口(/v4/upload)）");
+            //异步执行
+            new Thread(() -> {
+                graphBuilder.buildGraph(schema, Path.of(inputDir + "/" + schema));
+                graphSearch.loadGraph(schema);
+
+            }).start();
+            logger.info("已返回文件上传状态（该v3接口已弃用，请迁移至v4接口(/v4/upload)），" + resp);
+            return resp;
+        } catch (IOException e) {
+            e.printStackTrace();
+            msg.setFail("文件上传失败（该v3接口已弃用，请迁移至v4接口(/v4/upload)）");
+            resp.setMsg(msg);
+            resp.setCode(500);
+            resp.setContent(new String[]{});
+            resp.setCount(0);
+            return resp;
+        }
+    }
+    @PostMapping("/v4/upload")
+    public ResponseCommon<String[]> uploadV4(@RequestParam("file") MultipartFile file,@RequestParam("schema") String schema) {
+
+        ResponseCommon.Message msg = new ResponseCommon.Message("","");
+        ResponseCommon<String[]> resp = new ResponseCommon<>();
+
+        logger.info("schema:" + schema);
+
+        try {
+            byte[] bytes = file.getBytes();
+            // 将文件上传到 application.properties 中配置的 kg.inputDir 目录
+
+
+
+
+            String inputDir = kgProperties.getInputDir();
+
+            // 检查是否有schema目录，没有的话自动创建
+            if (!Files.exists(Paths.get(inputDir, schema))) {
+                Files.createDirectory(Paths.get(inputDir, schema));
+            }
+
+            System.out.println("原始文件名：" + file.getOriginalFilename());
+
+            String safeName = file.getOriginalFilename().replaceAll("[\\\\/:*?\"<>|]", "_");
+            System.out.println("安全文件名：" + safeName);
+
+
+
+            Path path = Paths.get(inputDir, schema, safeName);
+
+            // 确保目录存在
+            Files.createDirectories(path.getParent());
+            Files.write(path, bytes);
+
             msg.setSuccess("文件上传成功");
             resp.setMsg(msg);
             resp.setCode(200);
             resp.setContent(new String[]{});
             resp.setCount(0);
+            logger.info("即将启动知识库构建线程,当前构建文件:" + path.toString());
+            //异步执行
+            new Thread(() -> {
+                graphBuilder.buildGraph(schema, path);
+                graphSearch.loadGraph(schema);
+
+            }).start();
+            logger.info("已返回文件上传状态，" + resp.toString());
+            return resp;
+        } catch (IOException e) {
+            e.printStackTrace();
+            msg.setFail("文件上传失败");
+            resp.setMsg(msg);
+            resp.setCode(500);
+            resp.setContent(new String[]{});
+            resp.setCount(0);
+            return resp;
+        }
+    }
+    // 知识库文件上传接口
+    @PostMapping("/v4/build")
+    public ResponseCommon<Object[]> buildv4(@RequestBody String body) {
+
+        ResponseCommon.Message msg = new ResponseCommon.Message("", "");
+        ResponseCommon<Object[]> resp = new ResponseCommon<>();
+
+        // 解析 JSON 为 RequestCommon<RequestContentKnowledgeReset>
+        RequestCommon<RequestContentKnowledgeReset> request;
+        try {
+            request = JSON.parseObject(
+                body,
+                new TypeReference<RequestCommon<RequestContentKnowledgeReset>>() {}
+            );
+        } catch (Exception ex) {
+            msg.setFail("请求体不是合法的 JSON 或解析失败: " + ex.getMessage());
+            resp.setMsg(msg);
+            resp.setCode(400);
+            resp.setContent(new Object[]{});
+            resp.setCount(0);
+            return resp;
+        }
+
+        // 打印（调试）
+        System.out.println("收到请求: " + request);
+
+        boolean requestBodyValid = isRequestBodyValid(request);
+        if (!requestBodyValid) {
+            msg.setFail("fromId,fromNickname,content 验证失败");
+            resp.setMsg(msg);
+            resp.setCode(400);
+            resp.setContent(new Object[]{});
+            resp.setCount(0);
+            return resp;
+        }
+
+        // 根据你实际的 RequestContentKnowledgeReset 字段进行更细粒度校验，这里以 schema 字段为例
+        String schema = request.getContent().getSchema();
+        if (!StringUtils.hasText(schema)) {
+            msg.setFail("content.schema 为空");
+            resp.setMsg(msg);
+            resp.setCode(400);
+            resp.setContent(new Object[]{});
+            resp.setCount(0);
+            return resp;
+        }
+
+        // 打印/处理请求（示例）
+        System.out.println("fromId = " + request.getFromId());
+        System.out.println("fromNickname = " + request.getFromNickname());
+        System.out.println("content.schema = " + schema);
+
+        try {
+            String inputDir = kgProperties.getInputDir();
+
+
             logger.info("即将启动知识库构建线程");
             //异步执行
             new Thread(() -> {
@@ -102,11 +236,16 @@ public class KnowledgeController {
                 graphSearch.loadGraph(schema);
 
             }).start();
-            logger.info("已返回文件上传状态，" + resp);
+            msg.setSuccess("正在构建：" + schema);
+            resp.setMsg(msg);
+            resp.setCode(200);
+            resp.setContent(new String[]{});
+            resp.setCount(0);
+
             return resp;
-        } catch (IOException e) {
+        } catch (Exception e) {
             e.printStackTrace();
-            msg.setFail("文件上传失败");
+            msg.setFail("接口调用失败");
             resp.setMsg(msg);
             resp.setCode(500);
             resp.setContent(new String[]{});

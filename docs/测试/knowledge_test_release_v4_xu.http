@@ -1,6 +1,6 @@
 
 
-POST http://app.bitleap.cn:8085/aisearch/knowledge/v3/upload
+POST http://111.231.63.161:8085/aisearch/knowledge/v3/upload
 Content-Type: multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW
 
 ------WebKitFormBoundary7MA4YWxkTrZu0gW
@@ -16,7 +16,7 @@ Content-Type: application/octet-stream
 ------WebKitFormBoundary7MA4YWxkTrZu0gW--
 // 新增一个schema参数
 
-### 1. 文件上传并构建知识库
+### 1. 文件上传并构建知识库(!!!已弃用)
 ### 调用成功结果：{
 #  "code": 200,
 #  "content": [],
@@ -36,7 +36,7 @@ Content-Type: application/octet-stream
 #  }
 #}
 
-POST http://app.bitleap.cn:8085/aisearch/knowledge/v3/buildStatus
+POST http://111.231.63.161:8085/aisearch/knowledge/v3/buildStatus
 Content-Type: application/json
 
 {
@@ -70,7 +70,7 @@ Content-Type: application/json
 
 
 
-POST http://app.bitleap.cn:8085/aisearch/knowledge/v3/kgsearch
+POST http://111.231.63.161:8085/aisearch/knowledge/v3/kgsearch
 Content-Type: application/json
 
 {
@@ -118,7 +118,7 @@ Content-Type: application/json
 
 
 ### 4. 知识库重置
-POST http://app.bitleap.cn:8085/aisearch/knowledge/v3/reset
+POST http://111.231.63.161:8085/aisearch/knowledge/v3/reset
 Content-Type: application/json
 
 {
@@ -159,7 +159,7 @@ Content-Type: application/json
 ### 该接口会将服务端之前上传的文件删除，同时将数据库删除并重建。
 
 
-POST http://app.bitleap.cn:8085/aisearch/askgraph/select
+POST http://111.231.63.161:8085/aisearch/askgraph/select
 Content-Type: application/json
 
 {
@@ -183,7 +183,61 @@ Content-Type: application/json
 #    "chat_type": "agent",
 #    "is_streaming": true
 #  }
-GET http://app.bitleap.cn:8085/aisearch/stream-graph-chat?id=guest&input=介绍websdb&query=123
+GET http://111.231.63.161:8085/aisearch/stream-graph-chat?id=guest&input=介绍websdb&query=123
 Accept: text/event-stream; charset=UTF-8
 Accept-Charset: UTF-8
 
+
+### 
+
+
+POST http://111.231.63.161:8085/aisearch/knowledge/v4/upload
+Content-Type: multipart/form-data;  boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW
+
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="schema"
+
+aiask_test_schema
+
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="file"; filename="2.docx"
+Content-Type: application/octet-stream
+
+< I:\aisearch\release_0623002\release_0623002\knowledge\test_speed\2.docx
+------WebKitFormBoundary7MA4YWxkTrZu0gW--
+// 新增一个schema参数
+
+### 1. 文件上传并构建知识库
+### 调用成功结果：{
+#  "code": 200,
+#  "content": [],
+#  "count": 0,
+#  "msg": {
+#    "success": "文件上传成功",
+#    "fail": ""
+#  }
+#}
+### 调用失败结果：{
+#  "code": 500,
+#  "content": [],
+#  "count": 0,
+#  "msg": {
+#    "success": "",
+#    "fail": "文件上传失败"
+#  }
+#}
+
+
+
+POST http://111.231.63.161:8085/aisearch/knowledge/v4/build
+Content-Type: application/json
+
+{
+  "from_id": "guest",
+  "from_nickname": "guest",
+  "content": {
+    "schema": "aiask_test_schema"
+  }
+}
+
+### 知识库构建接口(v4版本新增)，调用该接口，将重新构建该schema对应的知识库（会自动跳过已经构建完成的文件）

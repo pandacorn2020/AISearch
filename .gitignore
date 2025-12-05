@@ -8,3 +8,4 @@ out0.txt
 /build/
 /spring.log*
 
+/token_usage.log

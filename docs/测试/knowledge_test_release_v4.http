@@ -9,10 +9,10 @@ Content-Disposition: form-data; name="schema"
 aiask_test_schema
 
 ------WebKitFormBoundary7MA4YWxkTrZu0gW
-Content-Disposition: form-data; name="file"; filename="123.pptx"
+Content-Disposition: form-data; name="file"; filename="1.docx"
 Content-Type: application/octet-stream
 
-< C:\Users\FENG\Desktop\tmp0812\合肥\123.pptx
+< I:\aisearch\release_0623002\release_0623002\knowledge\test_speed\1.docx
 ------WebKitFormBoundary7MA4YWxkTrZu0gW--
 // 新增一个schema参数
 
@@ -187,3 +187,58 @@ GET http://127.0.0.1:8080/aisearch/stream-graph-chat?id=guest&input=职业中介
 Accept: text/event-stream; charset=UTF-8
 Accept-Charset: UTF-8
 
+
+###
+
+
+
+POST http://127.0.0.1:8080/aisearch/knowledge/v4/upload
+Content-Type: multipart/form-data;  boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW
+
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="schema"
+
+aiask_test_schema
+
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="file"; filename="3.docx"
+Content-Type: application/octet-stream
+
+< I:\aisearch\release_0623002\release_0623002\knowledge\test_speed\3.docx
+------WebKitFormBoundary7MA4YWxkTrZu0gW--
+// 新增一个schema参数
+
+### 1. 文件上传并构建知识库
+### 调用成功结果：{
+#  "code": 200,
+#  "content": [],
+#  "count": 0,
+#  "msg": {
+#    "success": "文件上传成功",
+#    "fail": ""
+#  }
+#}
+### 调用失败结果：{
+#  "code": 500,
+#  "content": [],
+#  "count": 0,
+#  "msg": {
+#    "success": "",
+#    "fail": "文件上传失败"
+#  }
+#}
+
+
+
+POST http://127.0.0.1:8080/aisearch/knowledge/v4/build
+Content-Type: application/json
+
+{
+  "from_id": "guest",
+  "from_nickname": "guest",
+  "content": {
+    "schema": "aiask_test_schema"
+  }
+}
+
+### 知识库构建接口(v4版本新增)，调用该接口，将重新构建该schema对应的知识库（会自动跳过已经构建完成的文件）

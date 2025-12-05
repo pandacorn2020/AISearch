@@ -81,7 +81,13 @@ public class KgCommunityTask implements Callable<CommunityData> {
             // 格式化时间字符串
             String startTimeStr = String.format("%tF %<tT", startTime);
             OpenAiChatRequestParameters params = OpenAiChatRequestParameters.builder()
-                .customParameters(Map.of("enable_thinking", false))
+                .customParameters(Map.of(
+                        "chat_template_kwargs", Map.of(
+                            "enable_thinking", false
+                        ),
+                        "enable_thinking", false
+                    )
+                )
                 .build();
             ChatRequest chatRequest = ChatRequest.builder().parameters(params)
                 .messages( userMessage)

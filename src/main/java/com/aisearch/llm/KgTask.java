@@ -1,5 +1,6 @@
 package com.aisearch.llm;
 
+import com.aisearch.config.WebserverProperties;
 import dev.langchain4j.data.message.AiMessage;
 import dev.langchain4j.data.message.ChatMessage;
 import dev.langchain4j.data.message.SystemMessage;
@@ -13,6 +14,7 @@ import dev.langchain4j.model.output.Response;
 import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.io.File;
 import java.nio.charset.StandardCharsets;
@@ -30,6 +32,8 @@ public class KgTask implements Callable<String> {
     private String text;
 
     private ChatModel model;
+
+
 
     private static final Logger logger = LoggerFactory.getLogger(KgTask.class.getSimpleName());
 
@@ -57,6 +61,7 @@ public class KgTask implements Callable<String> {
     @Override
     public String call() {
         try {
+
             ChatMessage systemMessage = SystemMessage.systemMessage(ragKgSystemPrompt);
             String message = String.format(ragKgUserPrompt, segment.text());
             ChatMessage userMessage = UserMessage.userMessage(message);
@@ -65,7 +70,13 @@ public class KgTask implements Callable<String> {
             // 格式化时间字符串
             String startTimeStr = String.format("%tF %<tT", startTime);
             OpenAiChatRequestParameters params = OpenAiChatRequestParameters.builder()
-                .customParameters(Map.of("enable_thinking", false))
+                .customParameters(Map.of(
+                        "chat_template_kwargs", Map.of(
+                            "enable_thinking", false
+                        ),
+                        "enable_thinking", false
+                    )
+                )
                 .build();
             ChatRequest chatRequest = ChatRequest.builder().parameters(params)
                 .messages(systemMessage, userMessage)

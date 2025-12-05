@@ -33,6 +33,29 @@ public class LLMGetStartedTest {
         ChatResponse aiResponse = model.chat(chatRequest);
         System.out.println(aiResponse.aiMessage().text());
     }
+    @Test
+    public void testLiantai() {
+
+        OpenAiChatRequestParameters params = OpenAiChatRequestParameters.builder()
+            .customParameters(Map.of("chat_template_kwargs", Map.of(
+                "enable_thinking", false
+            )))
+            .build();
+        ChatRequest chatRequest = ChatRequest.builder()
+            .messages(UserMessage.userMessage("你好"))
+            .parameters(params)
+            .build();
+
+        OpenAiChatModel model = OpenAiChatModel.builder()
+            .baseUrl("https://model-inference-8ef84e18.a.user.hmlt.ltaidc.com:8444/v1")
+            .apiKey("sk-9cc9d")
+            .modelName("Qwen3-32B-local")
+            .build();
+
+        ChatResponse aiResponse = model.chat(chatRequest);
+
+        System.out.println(aiResponse.aiMessage().text());
+    }
 
     public static void main(String[] args) {
 

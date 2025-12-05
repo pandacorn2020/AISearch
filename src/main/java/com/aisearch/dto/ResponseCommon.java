@@ -47,6 +47,15 @@ public class ResponseCommon<T> {
         this.msg = msg;
     }
 
+    public String toString() {
+        return "ResponseCommon{" +
+                "code=" + code +
+                ", content=" + content +
+                ", count=" + count +
+                ", msg=" + msg +
+                '}';
+    }
+
     // 内部类或单独放在另一个文件里
     public static class Message {
         private String success;
