@@ -176,10 +176,11 @@ public class StreamingChatController {
 
 
     @GetMapping(value = "/image/{imageId}")
-    public ResponseEntity<byte[]> getImageById(@PathVariable Long imageId) {
+    public ResponseEntity<byte[]> getImageById(@PathVariable Long imageId,
+                                               @RequestParam("schema") String schema) {
         try {
             // 获取图像字节和格式
-            ImageWithFormat imageData = getImageBytesFromDatabase(imageId);
+            ImageWithFormat imageData = getImageBytesFromDatabase(schema, imageId);
 
             if (imageData == null || imageData.bytes == null) {
                 return ResponseEntity.notFound().build();
@@ -201,10 +202,9 @@ public class StreamingChatController {
     }
 
     // 根据 imageId 返回模拟图片（含格式信息）
-    private ImageWithFormat getImageBytesFromDatabase(Long imageId) {
+    private ImageWithFormat getImageBytesFromDatabase(String schema, Long imageId) {
         try {
-
-            KGImage kgimage = jdbcRepository.findKGImageById(imageId);
+            KGImage kgimage = jdbcRepository.findKGImageById(schema, imageId);
             return new ImageWithFormat(kgimage.getContent(), "png");
 //
 //            // 模拟图片格式判断逻辑

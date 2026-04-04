@@ -18,6 +18,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 import java.util.*;
 
@@ -47,6 +48,88 @@ public class GraphSearch {
     private Map<String, KGGraph> graphMap = new HashMap<>();
 
     private SessionData sessionData;
+
+    public static class SearchItem {
+        private String category;
+        private String text;
+        private List<String> sources;
+
+        public SearchItem() {
+        }
+
+        public SearchItem(String category, String text, List<String> sources) {
+            this.category = category;
+            this.text = text;
+            this.sources = sources;
+        }
+
+        public String getCategory() {
+            return category;
+        }
+
+        public void setCategory(String category) {
+            this.category = category;
+        }
+
+        public String getText() {
+            return text;
+        }
+
+        public void setText(String text) {
+            this.text = text;
+        }
+
+        public List<String> getSources() {
+            return sources;
+        }
+
+        public void setSources(List<String> sources) {
+            this.sources = sources;
+        }
+    }
+
+    public static class SearchV4Result {
+        private List<SearchItem> communities = new ArrayList<>();
+        private List<SearchItem> entities = new ArrayList<>();
+        private List<SearchItem> segments = new ArrayList<>();
+        private List<String> sourceList = new ArrayList<>();
+
+        public List<SearchItem> getCommunities() {
+            return communities;
+        }
+
+        public void setCommunities(List<SearchItem> communities) {
+            this.communities = communities;
+        }
+
+        public List<SearchItem> getEntities() {
+            return entities;
+        }
+
+        public void setEntities(List<SearchItem> entities) {
+            this.entities = entities;
+        }
+
+        public List<SearchItem> getSegments() {
+            return segments;
+        }
+
+        public void setSegments(List<SearchItem> segments) {
+            this.segments = segments;
+        }
+
+        public List<String> getSourceList() {
+            return sourceList;
+        }
+
+        public void setSourceList(List<String> sourceList) {
+            this.sourceList = sourceList;
+        }
+
+        public int getTotalCount() {
+            return communities.size() + entities.size() + segments.size();
+        }
+    }
 
 
     public GraphSearch() {
@@ -124,7 +207,7 @@ public class GraphSearch {
     public String search(String schema, RagQuery query) {
         StringJoiner joiner = new StringJoiner("\n\n");
         String input = query.getQuery();
-        String[] entities = query.getEntities();
+        String[] entities = normalizeEntities(query.getEntities());
         String result = search(schema, input, entities);
         joiner.add(result);
         List<KGImage> images = jdbcRepository.findKGImagesByDescriptionSimilarity(
@@ -138,6 +221,54 @@ public class GraphSearch {
         }
 
         return joiner.toString();
+    }
+
+    public SearchV4Result searchV4(String schema, RagQuery query, Set<String> categories,
+                                   int maxCommunityCount, int maxEntityCount,
+                                   int maxSegmentCount) {
+        String input = query.getQuery();
+        String[] entities = normalizeEntities(query.getEntities());
+
+        Set<String> selectedCategories = normalizeCategories(categories);
+        int communityLimit = Math.max(0, maxCommunityCount);
+        int entityLimit = Math.max(0, maxEntityCount);
+        int segmentLimit = Math.max(0, maxSegmentCount);
+
+        SearchV4Result result = new SearchV4Result();
+        LinkedHashSet<String> sourceSet = new LinkedHashSet<>();
+
+        if (selectedCategories.contains("community")) {
+            List<KGCommunity> communities = searchCommunities(schema, input, entities, communityLimit);
+            for (KGCommunity community : communities) {
+                List<String> sources = new ArrayList<>();
+                if (StringUtils.hasText(community.getName())) {
+                    sources.add("community:" + community.getName());
+                }
+                sourceSet.addAll(sources);
+                result.getCommunities().add(new SearchItem("community", community.getSummary(), sources));
+            }
+        }
+
+        if (selectedCategories.contains("entity")) {
+            List<KGEntity> entitiesResult = searchEntities(schema, entities, entityLimit);
+            for (KGEntity entity : entitiesResult) {
+                List<String> sources = buildFileSources(entity.getFileName());
+                sourceSet.addAll(sources);
+                result.getEntities().add(new SearchItem("entity", entity.toString(), sources));
+            }
+        }
+
+        if (selectedCategories.contains("segment")) {
+            List<KGSegment> segments = searchSegments(schema, input, entities, segmentLimit);
+            for (KGSegment segment : segments) {
+                List<String> sources = buildFileSources(segment.getFileName());
+                sourceSet.addAll(sources);
+                result.getSegments().add(new SearchItem("segment", segment.getSegment(), sources));
+            }
+        }
+
+        result.setSourceList(new ArrayList<>(sourceSet));
+        return result;
     }
 
     private String search(String schema, String input, String[] entities) {
@@ -182,18 +313,40 @@ public class GraphSearch {
 
     private List<KGSegment> searchSegments(String schema, String input, String[] entities) {
         int maxSize = getMaxSegmentSize(schema);
+        return searchSegments(schema, input, entities, maxSize);
+    }
+
+    private List<KGSegment> searchSegments(String schema, String input, String[] entities, int maxSize) {
+        if (maxSize <= 0) {
+            return Collections.emptyList();
+        }
         List<KGSegment> segments = jdbcRepository.semanticSearchForSegments(schema, input,
                 maxSize);
         return segments;
     }
+
     private List<KGCommunity> searchCommunities(String schema, String input, String[] entities) {
+        return searchCommunities(schema, input, entities, DOC_SEGMENT_MAX_SIZE);
+    }
+
+    private List<KGCommunity> searchCommunities(String schema, String input, String[] entities, int maxSize) {
+        if (maxSize <= 0) {
+            return Collections.emptyList();
+        }
         List<KGCommunity> communities = jdbcRepository.semanticSearchForCommunities(
-                schema, input, DOC_SEGMENT_MAX_SIZE);
+                schema, input, maxSize);
         return communities;
     }
 
     private List<KGEntity> searchEntities(String schema, String[] entities) {
-        List<KGEntity> entityList = jdbcRepository.getEntities(schema, entities, 6);
+        return searchEntities(schema, entities, 6);
+    }
+
+    private List<KGEntity> searchEntities(String schema, String[] entities, int topCount) {
+        if (topCount <= 0 || entities == null || entities.length == 0) {
+            return Collections.emptyList();
+        }
+        List<KGEntity> entityList = jdbcRepository.getEntities(schema, entities, topCount);
         int maxSize = getMaxEntitySize(schema);
         if (entityList.size() > maxSize) {
             return entityList.subList(0, maxSize);
@@ -207,6 +360,9 @@ public class GraphSearch {
             entities[i] = entityList.get(i).getName();
         }
         KGGraph graph = graphMap.get(schema);
+        if (graph == null) {
+            return Collections.emptyList();
+        }
         List<KGRelationship> relationships = new ArrayList<>();
         for (String entity : entities) {
             List<KGRelationship> list = graph.getRelationships(entity);
@@ -256,5 +412,48 @@ public class GraphSearch {
 
     public JdbcRepository getJdbcRepository() {
         return jdbcRepository;
+    }
+
+    private String[] normalizeEntities(String[] entities) {
+        if (entities == null || entities.length == 0) {
+            return new String[0];
+        }
+        List<String> list = new ArrayList<>();
+        for (String entity : entities) {
+            if (StringUtils.hasText(entity)) {
+                list.add(entity.trim());
+            }
+        }
+        return list.toArray(new String[0]);
+    }
+
+    private Set<String> normalizeCategories(Set<String> categories) {
+        if (categories == null || categories.isEmpty()) {
+            return new HashSet<>(Arrays.asList("community", "entity", "segment"));
+        }
+        Set<String> normalized = new HashSet<>();
+        for (String category : categories) {
+            if ("community".equals(category) || "entity".equals(category) || "segment".equals(category)) {
+                normalized.add(category);
+            }
+        }
+        if (normalized.isEmpty()) {
+            normalized.addAll(Arrays.asList("community", "entity", "segment"));
+        }
+        return normalized;
+    }
+
+    private List<String> buildFileSources(String sourceField) {
+        if (!StringUtils.hasText(sourceField)) {
+            return Collections.emptyList();
+        }
+        String[] parts = sourceField.split(",");
+        LinkedHashSet<String> set = new LinkedHashSet<>();
+        for (String part : parts) {
+            if (StringUtils.hasText(part)) {
+                set.add(part.trim());
+            }
+        }
+        return new ArrayList<>(set);
     }
 }

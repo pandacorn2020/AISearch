@@ -13,11 +13,11 @@ public class FileService {
     private PDFService pdfService;
 
 
-    public String convertFileToText(InputStream inputStream, String description) {
+    public String convertFileToText(InputStream inputStream, String description, String schema) {
 
         try {
             if (description.endsWith(".pdf")) {
-                return pdfService.process(inputStream);
+                return pdfService.process(inputStream, schema);
             } else {
                 return FileConverter.convertFileToText(inputStream, description);
             }

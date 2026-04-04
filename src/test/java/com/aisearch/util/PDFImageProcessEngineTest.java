@@ -1,6 +1,8 @@
 package com.aisearch.util;
 
 import com.aisearch.repository.JdbcRepository;
+import com.aisearch.service.Schemas;
+
 import org.apache.pdfbox.text.TextPosition;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -35,7 +37,8 @@ class PDFImageProcessEngineTest {
                 600, // pageHeight
                 pageTextPositions,
                 "Fallback text",
-                jdbcRepository
+                jdbcRepository,
+                Schemas.DOCS
         );
     }
 

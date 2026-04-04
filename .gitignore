@@ -9,3 +9,6 @@ out0.txt
 /spring.log*
 
 /token_usage.log
+
+.vscode
+/docs/测试/

@@ -2,7 +2,6 @@ package com.aisearch.util;
 
 import com.aisearch.entity.KGImage;
 import com.aisearch.repository.JdbcRepository;
-import com.aisearch.service.Schemas;
 import org.apache.pdfbox.cos.COSBase;
 import org.apache.pdfbox.cos.COSName;
 import org.apache.pdfbox.pdmodel.graphics.PDXObject;
@@ -47,6 +46,7 @@ public class PDFImageProcessEngine extends PDFStreamEngine
     private float pageHeight;
 
     private JdbcRepository jdbcRepository;
+    private String schema;
 
     private String pageText;
 
@@ -60,7 +60,8 @@ public class PDFImageProcessEngine extends PDFStreamEngine
                                  float pageHeight,
                                  List<TextPosition> pageTextPositions,
                                  String pageText,
-                                 JdbcRepository jdbcRepository) throws IOException
+                                 JdbcRepository jdbcRepository,
+                                 String schema) throws IOException
     {
         this.pageIndex = pageIndex;
         this.pageCount = pageCount;
@@ -68,6 +69,7 @@ public class PDFImageProcessEngine extends PDFStreamEngine
         this.pageTextPositions = pageTextPositions;
         this.pageText = pageText;
         this.jdbcRepository = jdbcRepository;
+        this.schema = schema;
         addOperator(new Concatenate());
         addOperator(new DrawObject());
         addOperator(new SetGraphicsStateParameters());
@@ -126,7 +128,7 @@ public class PDFImageProcessEngine extends PDFStreamEngine
                     description = pageText; // Fallback to the entire page text if no specific description found
                 }
                 KGImage kgImage = new KGImage(bytes, description);
-                jdbcRepository.saveImages(Schemas.DOCS, Arrays.asList(kgImage));
+                jdbcRepository.saveImages(schema, Arrays.asList(kgImage));
                 int len = Math.min(128, description.length());
                 logger.info("Image saved: size {}, page: {}/{}, description: {}", bytes.length, (pageIndex + 1), pageCount,
                         description.substring(0, len));

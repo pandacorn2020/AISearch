@@ -1,6 +1,8 @@
 package com.aisearch.util;
 
 import com.aisearch.repository.JdbcRepository;
+import com.aisearch.service.Schemas;
+
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.text.PDFTextStripper;
 import org.junit.jupiter.api.Test;
@@ -21,7 +23,7 @@ public class PDFExtractorTest {
         JdbcRepository mockJdbcRepository = mock(JdbcRepository.class);
 
         // Create an instance of PDFExtractor with the mocked repository
-        PDFExtractor pdfExtractor = new PDFExtractor(mockJdbcRepository);
+        PDFExtractor pdfExtractor = new PDFExtractor(mockJdbcRepository,Schemas.DOCS);
 
         // Provide a sample PDF file as input
         InputStream inputStream = Files.newInputStream(Paths.get("/input/现代舰船5.pdf"));

@@ -13,8 +13,8 @@ public class PDFService {
     @Autowired
     private JdbcRepository jdbcRepository;
 
-    public String process(InputStream inputStream) {
-        PDFExtractor extractor = new PDFExtractor(jdbcRepository);
+    public String process(InputStream inputStream, String schema) {
+        PDFExtractor extractor = new PDFExtractor(jdbcRepository, schema);
         try {
             return extractor.extract(inputStream);
         } catch (Exception e) {

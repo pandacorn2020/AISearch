@@ -4,6 +4,7 @@ import com.aisearch.config.KgProperties;
 import com.aisearch.dto.RequestCommon;
 import com.aisearch.dto.RequestContentKnowledgeReset;
 import com.aisearch.dto.RequestContentKnowledgeSearch;
+import com.aisearch.dto.RequestContentKnowledgeSearchV4;
 import com.aisearch.dto.ResponseCommon;
 import com.aisearch.entity.KGGraph;
 import com.aisearch.llm.RagQuery;
@@ -26,6 +27,11 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Locale;
+import java.util.Set;
 import java.util.logging.Logger;
 
 @CrossOrigin(origins = "*")
@@ -424,6 +430,108 @@ public class KnowledgeController {
         }
     }
 
+    // 知识库检索接口（v4）
+    @ResponseBody
+    @PostMapping("/v4/kgsearch")
+    public ResponseCommon<Object[]> kgSearchV4(@RequestBody String body) {
+        ResponseCommon.Message msg = new ResponseCommon.Message("", "");
+        ResponseCommon<Object[]> resp = new ResponseCommon<>();
+
+        RequestCommon<RequestContentKnowledgeSearchV4> request;
+        try {
+            request = JSON.parseObject(
+                body,
+                new TypeReference<RequestCommon<RequestContentKnowledgeSearchV4>>() {}
+            );
+        } catch (Exception ex) {
+            msg.setFail("请求体不是合法的 JSON 或解析失败: " + ex.getMessage());
+            resp.setMsg(msg);
+            resp.setCode(400);
+            resp.setContent(new Object[]{});
+            resp.setCount(0);
+            return resp;
+        }
+
+        if (!isRequestBodyValid(request)) {
+            msg.setFail("fromId,fromNickname,content 验证失败");
+            resp.setMsg(msg);
+            resp.setCode(400);
+            resp.setContent(new Object[]{});
+            resp.setCount(0);
+            return resp;
+        }
+
+        String query = request.getContent().getQuery();
+        if (!StringUtils.hasText(query)) {
+            msg.setFail("content.query 为空");
+            resp.setMsg(msg);
+            resp.setCode(400);
+            resp.setContent(new Object[]{});
+            resp.setCount(0);
+            return resp;
+        }
+
+        String schema = request.getContent().getSchema();
+        if (!StringUtils.hasText(schema)) {
+            msg.setFail("content.schema 为空");
+            resp.setMsg(msg);
+            resp.setCode(400);
+            resp.setContent(new Object[]{});
+            resp.setCount(0);
+            return resp;
+        }
+
+        Set<String> categories = normalizeCategories(request.getContent().getCategories());
+        int maxCommunityCount = normalizeLimit(
+            request.getContent().getMaxCommunityCount(),
+            graphSearch.getMaxSegmentSize(schema)
+        );
+        int maxEntityCount = normalizeLimit(
+            request.getContent().getMaxEntityCount(),
+            graphSearch.getMaxEntitySize(schema)
+        );
+        int maxSegmentCount = normalizeLimit(
+            request.getContent().getMaxSegmentCount(),
+            graphSearch.getMaxSegmentSize(schema)
+        );
+
+        try {
+            RagQuery ragQuery = RagQuery.valueOf(query);
+            GraphSearch.SearchV4Result result = graphSearch.searchV4(
+                schema,
+                ragQuery,
+                categories,
+                maxCommunityCount,
+                maxEntityCount,
+                maxSegmentCount
+            );
+
+            if (result.getTotalCount() == 0) {
+                msg.setFail("没有找到相关信息");
+                resp.setMsg(msg);
+                resp.setCode(500);
+                resp.setContent(new Object[]{});
+                resp.setCount(0);
+                return resp;
+            }
+
+            msg.setSuccess("操作成功");
+            resp.setMsg(msg);
+            resp.setCode(200);
+            resp.setContent(new Object[]{result});
+            resp.setCount(result.getTotalCount());
+            return resp;
+        } catch (Exception e) {
+            e.printStackTrace();
+            msg.setFail(e.getMessage());
+            resp.setMsg(msg);
+            resp.setCode(500);
+            resp.setContent(new Object[]{});
+            resp.setCount(0);
+            return resp;
+        }
+    }
+
     // 重置知识库接口
     @PostMapping("/v3/reset")
     public ResponseCommon<Object[]> resetKnowledgeV3(@RequestBody String body) {
@@ -539,6 +647,41 @@ public class KnowledgeController {
             return false;
         }
         return true;
+    }
+
+    private Set<String> normalizeCategories(List<String> categories) {
+        Set<String> all = new HashSet<>(Arrays.asList("community", "entity", "segment"));
+        if (categories == null || categories.isEmpty()) {
+            return all;
+        }
+        Set<String> normalized = new HashSet<>();
+        for (String category : categories) {
+            if (!StringUtils.hasText(category)) {
+                continue;
+            }
+            String key = category.trim().toLowerCase(Locale.ROOT);
+            if ("community".equals(key) || "communities".equals(key)) {
+                normalized.add("community");
+            } else if ("entity".equals(key) || "entities".equals(key)) {
+                normalized.add("entity");
+            } else if ("segment".equals(key) || "segments".equals(key)) {
+                normalized.add("segment");
+            }
+        }
+        if (normalized.isEmpty()) {
+            return all;
+        }
+        return normalized;
+    }
+
+    private int normalizeLimit(Integer input, int defaultValue) {
+        if (input == null) {
+            return defaultValue;
+        }
+        if (input < 0) {
+            return 0;
+        }
+        return input;
     }
 
 }

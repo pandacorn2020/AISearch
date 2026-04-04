@@ -166,7 +166,7 @@ public class GraphBuilder {
                 }
                 logger.info("Processing file: {}", description);
                 String text = fileService.convertFileToText(Files.newInputStream(path),
-                        description);
+                    description, schema);
                 boolean direct = description.startsWith("slice") && description.endsWith(".txt")
                         || description.endsWith(".json");
                 if (direct) {

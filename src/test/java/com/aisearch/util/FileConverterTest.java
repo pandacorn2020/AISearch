@@ -14,7 +14,7 @@ public class FileConverterTest {
         try {
             InputStream is = DocumentLoader.getInputStream("123.pptx");
             FileService fileService = new FileService();
-            String text = fileService.convertFileToText(is, "test.pptx");
+            String text = fileService.convertFileToText(is, "test.pptx","unknown");
             System.out.println(text);
             Assertions.assertTrue(text.contains("一季度中国GDP"));
             Assertions.assertTrue(text.contains("国家药品监督管理局发布"));

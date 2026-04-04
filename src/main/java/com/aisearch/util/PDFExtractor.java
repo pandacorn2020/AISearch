@@ -19,9 +19,11 @@ import java.util.*;
 public class PDFExtractor {
 
     private JdbcRepository jdbcRepository;
+    private String schema;
 
-    public PDFExtractor(JdbcRepository jdbcRepository) {
+    public PDFExtractor(JdbcRepository jdbcRepository, String schema) {
         this.jdbcRepository = jdbcRepository;
+        this.schema = schema;
     }
 
     public String extract(InputStream inputStream) throws IOException {
@@ -40,7 +42,7 @@ public class PDFExtractor {
                 float pageHeight = page.getMediaBox().getHeight();
                 List<TextPosition> textPositions = stripper.getTextPositions();
                 PDFImageProcessEngine imageProcessEngine = new PDFImageProcessEngine(i, pageCount, pageHeight, textPositions,
-                        pageText, jdbcRepository);
+                    pageText, jdbcRepository, schema);
                 imageProcessEngine.processPage(page);
             }
         }

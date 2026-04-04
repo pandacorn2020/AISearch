@@ -1,7 +1,6 @@
 package com.aisearch.llm;
 
 import com.aisearch.service.GraphSearch;
-import com.aisearch.service.Schemas;
 import dev.langchain4j.agent.tool.P;
 import dev.langchain4j.agent.tool.Tool;
 import org.apache.logging.log4j.Logger;
@@ -20,9 +19,7 @@ public class MeasureTools {
         this.schema = schema;
     }
     public MeasureTools(SessionData sessionData, GraphSearch graphSearch) {
-        this.sessionData = sessionData;
-        this.graphSearch = graphSearch;
-        this.schema = Schemas.DOCS;
+        this(sessionData, graphSearch, null);
     }
 
 
@@ -31,6 +28,9 @@ public class MeasureTools {
             """)
     public String searchForInfo(@P("input") String arg0) {
         logger.info("MeasureTools.searchForInfo: {}", arg0);
+        if (this.schema == null || this.schema.isEmpty()) {
+            return "schema 未设置，无法检索";
+        }
         String inputText = arg0;
         RagQuery ragQuery = RagQuery.valueOf(arg0);
         String result = graphSearch.search(this.schema,ragQuery);

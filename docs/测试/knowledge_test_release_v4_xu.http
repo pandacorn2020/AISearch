@@ -70,15 +70,15 @@ Content-Type: application/json
 
 
 
-POST http://111.231.63.161:8085/aisearch/knowledge/v3/kgsearch
+POST https://ai.cloudwave.cn/aisearch/knowledge/v3/kgsearch
 Content-Type: application/json
 
 {
   "from_id": "123456",
   "from_nickname": "用户123456",
   "content": {
-    "schema": "aiask_test_schema123",
-    "query": "仲裁委员会在聘任仲裁员时，应从哪些人员中选聘？|仲裁委员会,聘任仲裁员,选聘人员"
+    "schema": "aiask_1762018007897871",
+    "query": "websdop在网络安全领域的作用|WebSDP,网络安全"
   }
 }
 
@@ -125,7 +125,7 @@ Content-Type: application/json
   "from_id": "123456",
   "from_nickname": "用户123456",
   "content": {
-    "schema": "aiask_test_schema123"
+    "schema": "aiask_1762018007897871"
   }
 }
 
@@ -237,6 +237,19 @@ Content-Type: application/json
   "from_nickname": "guest",
   "content": {
     "schema": "aiask_test_schema"
+  }
+}
+
+### 知识库构建接口(v4版本新增)，调用该接口，将重新构建该schema对应的知识库（会自动跳过已经构建完成的文件）
+
+POST http://111.231.63.161:8085/aisearch/knowledge/v4/build
+Content-Type: application/json
+
+{
+  "from_id": "guest",
+  "from_nickname": "guest",
+  "content": {
+    "schema": "aiask_1774838000095037"
   }
 }
 

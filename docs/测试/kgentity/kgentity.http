@@ -10,6 +10,18 @@ Accept: application/json
 #        @RequestParam(defaultValue = "10") int size,
 #        @RequestParam(defaultValue = "name") String sortBy,
 #        @RequestParam(defaultValue = "asc") String direction
+// getAll
+GET http://localhost:8085/api/entity?schema=aiask_1767284869993432&page=0&size=10&orderBy=name&direction=ASC
+Accept: application/json
+
+
+###    @GetMapping
+#    public Page<KGEntity> getAll(
+#        @RequestParam String schema,
+#        @RequestParam(defaultValue = "0") int page,
+#        @RequestParam(defaultValue = "10") int size,
+#        @RequestParam(defaultValue = "name") String sortBy,
+#        @RequestParam(defaultValue = "asc") String direction
 
 
 GET http://localhost:8080/api/entity/aiask_test_schema/医疗关键领域融合
@@ -20,7 +32,7 @@ Accept: application/json
  #   public KGEntity getById(@PathVariable String schema,@PathVariable String name)
 
 // 创建
-POST http://localhost:8080/api/entity/aiask_test_schema
+POST http://localhost:8085/api/entity/aiask_1767284869993432
 Content-Type: application/json
 
 {
