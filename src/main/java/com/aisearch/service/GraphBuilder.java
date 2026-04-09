@@ -99,6 +99,7 @@ public class GraphBuilder {
 
     private void buildGraph(String schemaName, List<String> slices, String description) {
         logger.info("Building knowledge graph for schema: {}, description: {}", schemaName, description);
+        // 20260407 一个 graph 包含schema、segment、entity、relationship、community等信息
         KGGraph graph = new KGGraph(schemaName);
         // add slices to segments
         for (String slice : slices) {

@@ -33,7 +33,15 @@ public class SchemaService {
 
     private void createSchema(Connection connection, String schema) throws Exception {
         try (Statement statement = connection.createStatement()) {
-            statement.execute("CREATE SCHEMA IF NOT EXISTS " + schema);
+            try {
+                statement.execute("CREATE SCHEMA " + schema);
+            } catch (Exception e) {
+                if (isAlreadyExistsError(e)) {
+                    logger.info("Schema already exists, skip create: {}", schema);
+                } else {
+                    throw e;
+                }
+            }
             statement.execute("USE " + schema);
         }
     }
@@ -52,12 +60,25 @@ public class SchemaService {
                             String sql = joiner.toString();
                             logger.info("Executing SQL: {}", sql);
                             statement.execute("use " + schema);
-                            statement.execute(sql);
+                            try {
+                                statement.execute(sql);
+                            } catch (Exception e) {
+                                if (isAlreadyExistsError(e)) {
+                                    logger.info("Skip existing object in schema {}: {}", schema, sql);
+                                } else {
+                                    throw e;
+                                }
+                            }
                         }
                         joiner = new StringJoiner("\n");
                     }
                 }
             }
         }
+    }
+
+    private boolean isAlreadyExistsError(Exception e) {
+        String msg = e.getMessage();
+        return msg != null && msg.toLowerCase().contains("already exists");
     }
 }
