@@ -12,22 +12,30 @@ set "JAVA_CMD=java"
 if exist "%TARGET_JAVA_HOME%\bin\java.exe" (
     set "JAVA_HOME=%TARGET_JAVA_HOME%"
     set "PATH=%JAVA_HOME%\bin;%PATH%"
-    set "JAVA_CMD=%JAVA_HOME%\bin\java.exe"
 ) else (
     echo [WARN] JDK path not found: %TARGET_JAVA_HOME%
     echo [WARN] Continue with current JAVA_HOME: %JAVA_HOME%
 )
+
+if defined JAVA_HOME (
+    if exist "%JAVA_HOME%\bin\java.exe" (
+        set "JAVA_CMD=%JAVA_HOME%\bin\java.exe"
+    )
+)
+
+echo [INFO] JAVA_HOME: %JAVA_HOME%
+echo [INFO] JAVA_CMD : %JAVA_CMD%
 
 echo [INFO] Java runtime:
 "%JAVA_CMD%" -version
 if errorlevel 1 goto :fail
 
 echo [INFO] Maven runtime:
-mvn -v
+call mvn -v
 if errorlevel 1 goto :fail
 
 echo [INFO] Running build: mvn install -DskipTests
-mvn install -DskipTests
+call mvn install -DskipTests
 set "RC=%ERRORLEVEL%"
 if not "%RC%"=="0" goto :fail_with_rc
 

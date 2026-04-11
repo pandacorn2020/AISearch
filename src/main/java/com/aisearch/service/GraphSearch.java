@@ -92,6 +92,7 @@ public class GraphSearch {
         private List<SearchItem> communities = new ArrayList<>();
         private List<SearchItem> entities = new ArrayList<>();
         private List<SearchItem> segments = new ArrayList<>();
+        private List<SearchItem> relationships = new ArrayList<>();
         private List<String> sourceList = new ArrayList<>();
 
         public List<SearchItem> getCommunities() {
@@ -118,6 +119,14 @@ public class GraphSearch {
             this.segments = segments;
         }
 
+        public List<SearchItem> getRelationships() {
+            return relationships;
+        }
+
+        public void setRelationships(List<SearchItem> relationships) {
+            this.relationships = relationships;
+        }
+
         public List<String> getSourceList() {
             return sourceList;
         }
@@ -127,7 +136,7 @@ public class GraphSearch {
         }
 
         public int getTotalCount() {
-            return communities.size() + entities.size() + segments.size();
+            return communities.size() + entities.size() + segments.size() + relationships.size();
         }
     }
 
@@ -225,7 +234,7 @@ public class GraphSearch {
 
     public SearchV4Result searchV4(String schema, RagQuery query, Set<String> categories,
                                    int maxCommunityCount, int maxEntityCount,
-                                   int maxSegmentCount) {
+                                   int maxSegmentCount, int maxRelationshipCount) {
         String input = query.getQuery();
         String[] entities = normalizeEntities(query.getEntities());
 
@@ -233,6 +242,7 @@ public class GraphSearch {
         int communityLimit = Math.max(0, maxCommunityCount);
         int entityLimit = Math.max(0, maxEntityCount);
         int segmentLimit = Math.max(0, maxSegmentCount);
+        int relationshipLimit = Math.max(0, maxRelationshipCount);
 
         SearchV4Result result = new SearchV4Result();
         LinkedHashSet<String> sourceSet = new LinkedHashSet<>();
@@ -264,6 +274,17 @@ public class GraphSearch {
                 List<String> sources = buildFileSources(segment.getFileName());
                 sourceSet.addAll(sources);
                 result.getSegments().add(new SearchItem("segment", segment.getSegment(), sources));
+            }
+        }
+
+        if (selectedCategories.contains("relationship") && relationshipLimit > 0) {
+            int relationshipEntityTopCount = entityLimit > 0 ? entityLimit : 6;
+            List<KGEntity> relationshipEntities = searchEntities(schema, entities, relationshipEntityTopCount);
+            List<KGRelationship> relationships = searchRelationships(schema, relationshipEntities, relationshipLimit);
+            for (KGRelationship relationship : relationships) {
+                List<String> sources = buildFileSources(relationship.getFileName());
+                sourceSet.addAll(sources);
+                result.getRelationships().add(new SearchItem("relationship", relationship.toString(), sources));
             }
         }
 
@@ -355,6 +376,13 @@ public class GraphSearch {
     }
 
     private List<KGRelationship> searchRelationships(String schema,  List<KGEntity> entityList) {
+        return searchRelationships(schema, entityList, getMaxRelationshipSize(schema));
+    }
+
+    private List<KGRelationship> searchRelationships(String schema, List<KGEntity> entityList, int maxSizeLimit) {
+        if (maxSizeLimit <= 0 || entityList == null || entityList.isEmpty()) {
+            return Collections.emptyList();
+        }
         String[] entities = new String[entityList.size()];
         for (int i = 0; i < entityList.size(); i++) {
             entities[i] = entityList.get(i).getName();
@@ -370,7 +398,7 @@ public class GraphSearch {
                 relationships.addAll(list);
             }
         }
-        int maxSize = getMaxRelationshipSize(schema);
+        int maxSize = Math.min(getMaxRelationshipSize(schema), maxSizeLimit);
         if (relationships.size() > maxSize) {
             return relationships.subList(0, maxSize);
         }
@@ -429,16 +457,17 @@ public class GraphSearch {
 
     private Set<String> normalizeCategories(Set<String> categories) {
         if (categories == null || categories.isEmpty()) {
-            return new HashSet<>(Arrays.asList("community", "entity", "segment"));
+            return new HashSet<>(Arrays.asList("community", "entity", "segment", "relationship"));
         }
         Set<String> normalized = new HashSet<>();
         for (String category : categories) {
-            if ("community".equals(category) || "entity".equals(category) || "segment".equals(category)) {
+            if ("community".equals(category) || "entity".equals(category)
+                || "segment".equals(category) || "relationship".equals(category)) {
                 normalized.add(category);
             }
         }
         if (normalized.isEmpty()) {
-            normalized.addAll(Arrays.asList("community", "entity", "segment"));
+            normalized.addAll(Arrays.asList("community", "entity", "segment", "relationship"));
         }
         return normalized;
     }

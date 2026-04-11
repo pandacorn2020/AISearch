@@ -23,6 +23,9 @@ public class RequestContentKnowledgeSearchV4 {
     @JSONField(name = "max_segment_count")
     private Integer maxSegmentCount;
 
+    @JSONField(name = "max_relationship_count")
+    private Integer maxRelationshipCount;
+
     public RequestContentKnowledgeSearchV4() {
     }
 
@@ -74,6 +77,14 @@ public class RequestContentKnowledgeSearchV4 {
         this.maxSegmentCount = maxSegmentCount;
     }
 
+    public Integer getMaxRelationshipCount() {
+        return maxRelationshipCount;
+    }
+
+    public void setMaxRelationshipCount(Integer maxRelationshipCount) {
+        this.maxRelationshipCount = maxRelationshipCount;
+    }
+
     @Override
     public String toString() {
         return "RequestContentKnowledgeSearchV4{" +
@@ -83,6 +94,7 @@ public class RequestContentKnowledgeSearchV4 {
             ", maxCommunityCount=" + maxCommunityCount +
             ", maxEntityCount=" + maxEntityCount +
             ", maxSegmentCount=" + maxSegmentCount +
+            ", maxRelationshipCount=" + maxRelationshipCount +
             '}';
     }
 }

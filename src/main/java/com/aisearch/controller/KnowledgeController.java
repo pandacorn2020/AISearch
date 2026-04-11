@@ -494,6 +494,10 @@ public class KnowledgeController {
             request.getContent().getMaxSegmentCount(),
             graphSearch.getMaxSegmentSize(schema)
         );
+        int maxRelationshipCount = normalizeLimit(
+            request.getContent().getMaxRelationshipCount(),
+            graphSearch.getMaxRelationshipSize(schema)
+        );
 
         try {
             RagQuery ragQuery = RagQuery.valueOf(query);
@@ -503,7 +507,8 @@ public class KnowledgeController {
                 categories,
                 maxCommunityCount,
                 maxEntityCount,
-                maxSegmentCount
+                maxSegmentCount,
+                maxRelationshipCount
             );
 
             if (result.getTotalCount() == 0) {
@@ -650,7 +655,7 @@ public class KnowledgeController {
     }
 
     private Set<String> normalizeCategories(List<String> categories) {
-        Set<String> all = new HashSet<>(Arrays.asList("community", "entity", "segment"));
+        Set<String> all = new HashSet<>(Arrays.asList("community", "entity", "segment", "relationship"));
         if (categories == null || categories.isEmpty()) {
             return all;
         }
@@ -666,6 +671,9 @@ public class KnowledgeController {
                 normalized.add("entity");
             } else if ("segment".equals(key) || "segments".equals(key)) {
                 normalized.add("segment");
+            } else if ("relationship".equals(key) || "relationships".equals(key)
+                || "relation".equals(key) || "relations".equals(key)) {
+                normalized.add("relationship");
             }
         }
         if (normalized.isEmpty()) {
