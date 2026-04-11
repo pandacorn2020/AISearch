@@ -1,5 +1,6 @@
 package com.aisearch.service;
 
+import com.aisearch.config.KgProperties;
 import com.aisearch.repository.JdbcRepository;
 import com.aisearch.util.PDFExtractor;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,8 +14,11 @@ public class PDFService {
     @Autowired
     private JdbcRepository jdbcRepository;
 
+    @Autowired
+    private KgProperties kgProperties;
+
     public String process(InputStream inputStream, String schema) {
-        PDFExtractor extractor = new PDFExtractor(jdbcRepository, schema);
+        PDFExtractor extractor = new PDFExtractor(jdbcRepository, schema, kgProperties);
         try {
             return extractor.extract(inputStream);
         } catch (Exception e) {

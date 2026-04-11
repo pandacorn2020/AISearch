@@ -12,6 +12,14 @@ public class KgProperties {
     private String url;
 
     private String inputDir;
+
+    private String ocrUrl;
+
+    private String ocrModelName;
+
+    private String ocrApiKey;
+
+    private String ocrPrompt;
     public String getModelName() {
         return modelName;
     }
@@ -42,6 +50,38 @@ public class KgProperties {
 
     public void setInputDir(String inputDir) {
         this.inputDir = inputDir;
+    }
+
+    public String getOcrUrl() {
+        return ocrUrl;
+    }
+
+    public void setOcrUrl(String ocrUrl) {
+        this.ocrUrl = ocrUrl;
+    }
+
+    public String getOcrModelName() {
+        return ocrModelName;
+    }
+
+    public void setOcrModelName(String ocrModelName) {
+        this.ocrModelName = ocrModelName;
+    }
+
+    public String getOcrApiKey() {
+        return ocrApiKey;
+    }
+
+    public void setOcrApiKey(String ocrApiKey) {
+        this.ocrApiKey = ocrApiKey;
+    }
+
+    public String getOcrPrompt() {
+        return ocrPrompt;
+    }
+
+    public void setOcrPrompt(String ocrPrompt) {
+        this.ocrPrompt = ocrPrompt;
     }
 
 }
