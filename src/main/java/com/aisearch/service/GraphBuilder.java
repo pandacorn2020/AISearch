@@ -77,6 +77,10 @@ public class GraphBuilder {
         return executorService;
     }
 
+    public long getTaskTimeoutSeconds() {
+        return kgProperties.getTaskTimeoutSeconds();
+    }
+
     private void initGraphs() {
     }
 
@@ -147,6 +151,7 @@ public class GraphBuilder {
             buildGraph(schemaName, path);
         } catch (Throwable t) {
             logger.error("Failed to build graph for " + schemaName, t);
+            throw new RuntimeException("Failed to build graph for " + schemaName + ": " + t.getMessage(), t);
         }
     }
 
@@ -156,6 +161,7 @@ public class GraphBuilder {
                 Files.list(path).forEach(p -> buildGraph(schema, p));
             } catch (Throwable t) {
                 logger.error("Failed to build graph", t);
+                throw new RuntimeException("Failed to build graph for schema " + schema + ": " + t.getMessage(), t);
             }
         } else {
             try {
@@ -183,6 +189,7 @@ public class GraphBuilder {
 
             } catch (Throwable t) {
                 logger.error("Failed to build graph", t);
+                throw new RuntimeException("Failed to build graph for file " + path + ": " + t.getMessage(), t);
             }
         }
     }
@@ -264,6 +271,7 @@ public class GraphBuilder {
     }
     private List<String> batchGetKgText(List<KgTask> taskList) {
         try {
+            long timeoutSeconds = getTaskTimeoutSeconds();
             Stopwatch watch = Stopwatch.createStarted();
             List<String> textList = new ArrayList<>();
             List<Future<String>> futureList = new ArrayList<>();
@@ -271,11 +279,13 @@ public class GraphBuilder {
                 futureList.add(executorService.submit(task));
             }
             for (Future<String> future : futureList) {
-                textList.add(future.get());
+                textList.add(future.get(timeoutSeconds, TimeUnit.SECONDS));
             }
             logger.info("Batch get kg text, task size: {}, time: {}ms",
                     taskList.size(), watch.elapsed(TimeUnit.MILLISECONDS));
             return textList;
+        } catch (TimeoutException te) {
+            throw new RuntimeException("KG task timeout after " + getTaskTimeoutSeconds() + " seconds", te);
         } catch (Throwable t) {
             throw new RuntimeException(t);
         }
@@ -283,6 +293,7 @@ public class GraphBuilder {
 
     public void batchExecuteTasks(List<Callable> taskList) {
         try {
+            long timeoutSeconds = getTaskTimeoutSeconds();
             int batchSize = BATCH_SIZE;
             List<Future<String>> futureList = new ArrayList<>();
             int index = 0;
@@ -291,7 +302,7 @@ public class GraphBuilder {
                 if (futureList.size() >= batchSize) {
                     Stopwatch watch = Stopwatch.createStarted();
                     for (Future<String> future : futureList) {
-                        future.get();
+                        future.get(timeoutSeconds, TimeUnit.SECONDS);
                     }
                     index += futureList.size();
                     logger.info("Batch execute tasks, task size: {}/{}, time: {}ms",
@@ -302,12 +313,14 @@ public class GraphBuilder {
             if (!futureList.isEmpty()) {
                 Stopwatch watch = Stopwatch.createStarted();
                 for (Future<String> future : futureList) {
-                    future.get();
+                    future.get(timeoutSeconds, TimeUnit.SECONDS);
                 }
                 index += futureList.size();
                 logger.info("Batch execute tasks, task size: {}/{}, time: {}ms",
                         index, taskList.size(), watch.elapsed(TimeUnit.MILLISECONDS));
             }
+        } catch (TimeoutException te) {
+            throw new RuntimeException("KG batch task timeout after " + getTaskTimeoutSeconds() + " seconds", te);
         } catch (Throwable t) {
             throw new RuntimeException(t);
         }

@@ -7,6 +7,7 @@ import java.util.Map;
 
 public class Schemas {
     public static final String DOCS = "DOCS_JT"; // 测试schema
+    public static final String MANAGER = "aisearch_manager"; // 系统schema，用于任务状态管理
 
     public static final String[] SCHEMAS = {DOCS};
 
@@ -14,6 +15,7 @@ public class Schemas {
 
     static {
         SCHEMA_DESCRIPTION_MAP.put(DOCS, "文档");
+        SCHEMA_DESCRIPTION_MAP.put(MANAGER, "系统管理");
     }
 
     public static String getSchemaDescription(String schema) {

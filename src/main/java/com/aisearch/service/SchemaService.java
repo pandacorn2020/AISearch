@@ -24,10 +24,19 @@ public class SchemaService {
         try (Connection connection = dataSource.getConnection()) {
             for (String schema : schemas) {
                 createSchema(connection, schema);
-                executeSqlFile(connection, schema);
+                executeSqlFile(connection, schema, "tables.sql");
             }
         } catch (Exception e) {
             throw new RuntimeException("Failed to initialize schemas", e);
+        }
+    }
+
+    public void initializeManagerSchema() {
+        try (Connection connection = dataSource.getConnection()) {
+            createSchema(connection, Schemas.MANAGER);
+            executeSqlFile(connection, Schemas.MANAGER, "manager_tables.sql");
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to initialize manager schema", e);
         }
     }
 
@@ -46,8 +55,8 @@ public class SchemaService {
         }
     }
 
-    private void executeSqlFile(Connection connection, String schema) throws Exception {
-        ClassPathResource resource = new ClassPathResource("tables.sql");
+    private void executeSqlFile(Connection connection, String schema, String sqlFileName) throws Exception {
+        ClassPathResource resource = new ClassPathResource(sqlFileName);
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(resource.getInputStream()))) {
             String line;
             StringJoiner joiner = new StringJoiner("\n");

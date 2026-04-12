@@ -20,6 +20,10 @@ public class KgProperties {
     private String ocrApiKey;
 
     private String ocrPrompt;
+
+    private Integer taskTimeoutSeconds;
+
+    private Integer taskHeartbeatIntervalMs;
     public String getModelName() {
         return modelName;
     }
@@ -82,6 +86,28 @@ public class KgProperties {
 
     public void setOcrPrompt(String ocrPrompt) {
         this.ocrPrompt = ocrPrompt;
+    }
+
+    public Integer getTaskTimeoutSeconds() {
+        if (taskTimeoutSeconds == null || taskTimeoutSeconds <= 0) {
+            return 300;
+        }
+        return taskTimeoutSeconds;
+    }
+
+    public void setTaskTimeoutSeconds(Integer taskTimeoutSeconds) {
+        this.taskTimeoutSeconds = taskTimeoutSeconds;
+    }
+
+    public Integer getTaskHeartbeatIntervalMs() {
+        if (taskHeartbeatIntervalMs == null || taskHeartbeatIntervalMs <= 0) {
+            return 5000;
+        }
+        return taskHeartbeatIntervalMs;
+    }
+
+    public void setTaskHeartbeatIntervalMs(Integer taskHeartbeatIntervalMs) {
+        this.taskHeartbeatIntervalMs = taskHeartbeatIntervalMs;
     }
 
 }

@@ -21,6 +21,8 @@ import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import static com.aisearch.service.GraphBuilder.BATCH_SIZE;
 
@@ -180,8 +182,9 @@ public class KGGraph {
         Stopwatch watch = Stopwatch.createStarted();
         Graph<KGEntity, KGRelationship> graph = toGraph();
         List<KgCommunityTask> taskList = getKgCommunityTasks(graphBuilder, graph);
+        long timeoutSeconds = graphBuilder.getTaskTimeoutSeconds();
         List<CommunityData> dataList = batchGetCommunityData(
-                graphBuilder.getExecutorService(), taskList);
+            graphBuilder.getExecutorService(), taskList, timeoutSeconds);
         for (CommunityData data : dataList) {
             if (data == null) {
                 continue;
@@ -217,7 +220,8 @@ public class KGGraph {
 
     private List<CommunityData> batchGetCommunityData(
             ExecutorService executorService,
-            List<KgCommunityTask> taskList) {
+            List<KgCommunityTask> taskList,
+            long timeoutSeconds) {
         try {
             List<CommunityData> dataList = new ArrayList<>();
             int batchSize = BATCH_SIZE;
@@ -230,7 +234,7 @@ public class KGGraph {
                     Stopwatch watch = Stopwatch.createStarted();
                     List<Future<CommunityData>> subList = futureList.subList(0, futureList.size());
                     for (Future<CommunityData> future : subList) {
-                        dataList.add(future.get());
+                        dataList.add(future.get(timeoutSeconds, TimeUnit.SECONDS));
                     }
                     logger.info("Batch get community data took {} ms, index: {}/{}",
                             watch.elapsed().toMillis(), index, taskList.size());
@@ -242,11 +246,13 @@ public class KGGraph {
             }
             Stopwatch watch = Stopwatch.createStarted();
             for (Future<CommunityData> future : futureList) {
-                dataList.add(future.get());
+                dataList.add(future.get(timeoutSeconds, TimeUnit.SECONDS));
             }
             logger.info("Batch get community data took {} ms, index: {}/{}",
                     watch.elapsed().toMillis(), index, taskList.size());
             return dataList;
+        } catch (TimeoutException te) {
+            throw new RuntimeException("Community task timeout after " + timeoutSeconds + " seconds", te);
         } catch (Throwable t) {
             throw new RuntimeException(t);
         }

@@ -13,5 +13,6 @@ public class SchemaInitializer {
     @PostConstruct
     public void initDefaultSchemas() {
         schemaService.initializeSchemas(Schemas.SCHEMAS);
+        schemaService.initializeManagerSchema();
     }
 }
