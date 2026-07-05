@@ -111,7 +111,7 @@ curl -X POST http://127.0.0.1:8080/aisearch/knowledge/v2/kgsearch -H "Content-Ty
 
 ```shell
 
-curl -X POST http://127.0.0.1:8084/aisearch/askgraph/select -H "Content-Type: application/json" -d '{"from_id": "guest", "from_nickname": "guest", "content": "{\"schema\":\"haiguan\",\"chat_type\":\"agent\",\"is_streaming\":true}"}'
+curl -X POST http://127.0.0.1:8085/aisearch/askgraph/select -H "Content-Type: application/json" -d '{"from_id": "guest", "from_nickname": "guest", "content": "{\"schema\":\"haiguan\",\"chat_type\":\"agent\",\"is_streaming\":true}"}'
 
 
 ```
