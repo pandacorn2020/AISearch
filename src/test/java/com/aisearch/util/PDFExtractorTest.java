@@ -3,6 +3,7 @@ package com.aisearch.util;
 import com.aisearch.repository.JdbcRepository;
 import com.aisearch.service.Schemas;
 
+import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.text.PDFTextStripper;
 import org.junit.jupiter.api.Test;
@@ -26,14 +27,14 @@ public class PDFExtractorTest {
         PDFExtractor pdfExtractor = new PDFExtractor(mockJdbcRepository,Schemas.DOCS);
 
         // Provide a sample PDF file as input
-        InputStream inputStream = Files.newInputStream(Paths.get("/input/现代舰船5.pdf"));
+        InputStream inputStream = Files.newInputStream(Paths.get("I:\\aisearch\\release_0623002\\release_0623002\\knowledge\\hanyunleyang\\lunwen\\焦树德临证百案按_test.pdf"));
 
         // Call the extract method
         String extractedContent = pdfExtractor.extract(inputStream);
 
-        inputStream = Files.newInputStream(Paths.get("/input/现代舰船5.pdf"));
+        inputStream = Files.newInputStream(Paths.get("I:\\aisearch\\release_0623002\\release_0623002\\knowledge\\hanyunleyang\\lunwen\\焦树德临证百案按_test.pdf"));
         PDFTextStripper stripper = new PDFTextStripper();
-        PDDocument document = PDDocument.load(inputStream);
+        PDDocument document = Loader.loadPDF(inputStream.readAllBytes());
         String pageText = stripper.getText(document);
         System.out.println("Extracted page text: " + pageText);
 

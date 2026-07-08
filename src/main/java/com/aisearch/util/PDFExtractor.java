@@ -5,6 +5,7 @@ import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.aisearch.repository.JdbcRepository;
+import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
 import org.apache.pdfbox.rendering.PDFRenderer;
@@ -57,32 +58,66 @@ public class PDFExtractor {
 
     public String extract(InputStream inputStream) throws IOException {
         List<String> pageTexts = new ArrayList<>();
-        try (PDDocument document = PDDocument.load(inputStream)) {
-            // First pass: collect all text positions
+        byte[] pdfBytes = inputStream.readAllBytes();
+        try (PDDocument document = Loader.loadPDF(pdfBytes)) {
+            // Release the raw PDF bytes from memory after loading into PDDocument
+            pdfBytes = null;
+
+            // First pass: collect all text + text positions
             PDFPageTextWithLocationExtractor stripper = new PDFPageTextWithLocationExtractor();
-            // Second pass: extract images with context
             int pageCount = document.getNumberOfPages();
+            List<List<TextPosition>> allPageTextPositions = new ArrayList<>();
             for (int i = 0; i < pageCount; i++) {
                 stripper.setStartPage(i + 1);
                 stripper.setEndPage(i + 1);
                 String pageText = stripper.getText(document);
-                pageTexts.add(pageText.trim()); // 去除前后空格后加入列表
-                PDPage page = document.getPage(i);
-                float pageHeight = page.getMediaBox().getHeight();
-                List<TextPosition> textPositions = stripper.getTextPositions();
-                PDFImageProcessEngine imageProcessEngine = new PDFImageProcessEngine(i, pageCount, pageHeight, textPositions,
-                    pageText, jdbcRepository, schema);
-                imageProcessEngine.processPage(page);
+                pageTexts.add(pageText.trim());
+                allPageTextPositions.add(new ArrayList<>(stripper.getTextPositions()));
             }
 
+            // Check & OCR: determine final pageTexts before image processing
+            boolean ocrUsed = false;
             if (isAllImagePdf(pageTexts)) {
                 logger.info("检测到纯图片 PDF，切换到 OCR 流程。schema={}", schema);
                 List<String> ocrTexts = extractByOcr(document);
                 if (!ocrTexts.isEmpty() && ocrTexts.stream().anyMatch(PDFExtractor::hasText)) {
                     pageTexts = ocrTexts;
+                    ocrUsed = true;
                 } else {
-                    logger.warn("OCR 流程返回空内容，回退到原始提取文本。");
+                    logger.warn("OCR 流程返回空内容（共 {} 页，有效文本页数=0），回退到原始提取文本。",
+                        ocrTexts.size());
                 }
+            } else if (isGarbledText(pageTexts)) {
+                logger.info("检测到乱码文本（中文字符占比过低），切换到 OCR 流程。schema={}", schema);
+                List<String> ocrTexts = extractByOcr(document);
+                int validPageCount = (int) ocrTexts.stream().filter(PDFExtractor::hasText).count();
+                if (!ocrTexts.isEmpty() && validPageCount > 0) {
+                    logger.info("OCR 成功提取 {} / {} 页文本", validPageCount, ocrTexts.size());
+                    pageTexts = ocrTexts;
+                    ocrUsed = true;
+                } else {
+                    logger.warn("OCR 流程返回空内容（共 {} 页，有效文本页数={}），回退到原始提取文本。"
+                        + " 请检查日志中 '第 X/Y 页 OCR 失败' 的具体错误信息。",
+                        ocrTexts.size(), validPageCount);
+                }
+            }
+
+            // Image processing: skip when OCR was used (full-page images already OCR'd)
+            if (ocrUsed) {
+                logger.info("OCR 全页识别模式，跳过图片提取。schema={}", schema);
+            } else {
+                for (int i = 0; i < pageCount; i++) {
+                    PDPage page = document.getPage(i);
+                    float pageHeight = page.getMediaBox().getHeight();
+                    List<TextPosition> textPositions = allPageTextPositions.get(i);
+                    String pageText = pageTexts.get(i);
+                    PDFImageProcessEngine imageProcessEngine = new PDFImageProcessEngine(i, pageCount, pageHeight, textPositions,
+                        pageText, jdbcRepository, schema);
+                    imageProcessEngine.processPage(page);
+                    // Release text positions for this page to free memory progressively
+                    allPageTextPositions.set(i, null);
+                }
+                allPageTextPositions.clear();
             }
         }
         StringJoiner joiner = new StringJoiner("\n");
@@ -105,6 +140,25 @@ public class PDFExtractor {
         return text != null && !text.trim().isEmpty();
     }
 
+    /**
+     * 检测提取出的文本是否为乱码。
+     * 判断标准：CJK 统一汉字（U+4E00~U+9FFF + 扩展A区 U+3400~U+4DBF）占比低于 5%。
+     * 适用于 PDF 内嵌了中文字体但缺少 ToUnicode CMap 表导致 PDFBox 无法正确解码的场景。
+     */
+    private boolean isGarbledText(List<String> pageTexts) {
+        String all = String.join("", pageTexts);
+        if (all.length() < 20) {
+            return false;
+        }
+        long chineseCount = all.chars()
+            .filter(c -> (c >= 0x4E00 && c <= 0x9FFF) || (c >= 0x3400 && c <= 0x4DBF))
+            .count();
+        double ratio = (double) chineseCount / all.length();
+        logger.info("乱码检测：总字符数={}, 中文字符数={}, 中文占比={}",
+            all.length(), chineseCount, String.format("%.2f%%", ratio * 100));
+        return ratio < 0.05;
+    }
+
     private List<String> extractByOcr(PDDocument document) {
         List<String> ocrTexts = new ArrayList<>();
         if (!ocrEnabled()) {
@@ -116,10 +170,14 @@ public class PDFExtractor {
             int pages = document.getNumberOfPages();
             for (int i = 0; i < pages; i++) {
                 try {
-                    BufferedImage image = renderer.renderImageWithDPI(i, 200);
+                    BufferedImage image = renderer.renderImageWithDPI(i, 150);
                     byte[] bytes = bufferedImageToPng(image);
+                    // Flush the rendered image to free native memory immediately
+                    image.flush();
                     String pageText = ocrImage(bytes, i + 1, pages);
                     ocrTexts.add(pageText == null ? "" : pageText.trim());
+                    // Help GC: clear reference to the potentially large byte array
+                    bytes = null;
                 } catch (Exception pageEx) {
                     logger.error("第 {}/{} 页 OCR 失败", i + 1, pages, pageEx);
                     ocrTexts.add("");
@@ -202,16 +260,30 @@ public class PDFExtractor {
         );
 
         if (response.statusCode() / 100 != 2) {
+            String respBody = response.body();
+            logger.error("OCR 第 {}/{} 页 HTTP {} 失败，响应前500字符: {}",
+                page, pageCount, response.statusCode(),
+                respBody == null ? "null" : respBody.substring(0, Math.min(500, respBody.length())));
             throw new RuntimeException("OCR http status=" + response.statusCode()
-                + ", body=" + response.body());
+                + ", body=" + respBody);
         }
 
-        String text = parseOcrText(response.body());
+        String respBody = response.body();
+        if (respBody != null && respBody.length() > 0) {
+            int logLen = Math.min(300, respBody.length());
+            logger.debug("OCR 第 {}/{} 页 HTTP 200 响应前{}字符: {}", page, pageCount, logLen,
+                respBody.substring(0, logLen));
+        }
+
+        String text = parseOcrText(respBody);
         int len = Math.min(128, text == null ? 0 : text.length());
         if (len > 0) {
             logger.info("OCR 第 {}/{} 页，文本={}", page, pageCount, text.substring(0, len));
         } else {
-            logger.info("OCR 第 {}/{} 页，文本为空", page, pageCount);
+            logger.warn("OCR 第 {}/{} 页 HTTP 200 但 text 为空，parseOcrText 解析失败。"
+                + " 响应前300字符: {}",
+                page, pageCount,
+                respBody == null ? "null" : respBody.substring(0, Math.min(300, respBody.length())));
         }
         return text;
     }

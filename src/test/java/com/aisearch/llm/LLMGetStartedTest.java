@@ -25,8 +25,8 @@ public class LLMGetStartedTest {
             .build();
 
         OpenAiChatModel model = OpenAiChatModel.builder()
-            .baseUrl("https://dashscope.aliyuncs.com/compatible-mode/v1")
-            .apiKey("sk-9cc9dbdd16b3488e9edb1cbad7ea695a")
+            .baseUrl("https://llm-dne5kw6zs5l4slh0.cn-beijing.maas.aliyuncs.com/compatible-mode/v1")
+            .apiKey("sk-3ce549b0b88846bca3d3e608d046706d")
             .modelName("qwen3-32b")
             .build();
 

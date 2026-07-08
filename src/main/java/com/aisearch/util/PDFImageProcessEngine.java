@@ -13,6 +13,8 @@ import org.apache.pdfbox.contentstream.operator.DrawObject;
 import org.apache.pdfbox.contentstream.operator.Operator;
 import org.apache.pdfbox.contentstream.PDFStreamEngine;
 
+import java.awt.Graphics2D;
+import java.awt.RenderingHints;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -70,12 +72,12 @@ public class PDFImageProcessEngine extends PDFStreamEngine
         this.pageText = pageText;
         this.jdbcRepository = jdbcRepository;
         this.schema = schema;
-        addOperator(new Concatenate());
-        addOperator(new DrawObject());
-        addOperator(new SetGraphicsStateParameters());
-        addOperator(new Save());
-        addOperator(new Restore());
-        addOperator(new SetMatrix());
+        addOperator(new Concatenate(this));
+        addOperator(new DrawObject(this));
+        addOperator(new SetGraphicsStateParameters(this));
+        addOperator(new Save(this));
+        addOperator(new Restore(this));
+        addOperator(new SetMatrix(this));
     }
 
     private int imageIndex = 0;
@@ -111,9 +113,7 @@ public class PDFImageProcessEngine extends PDFStreamEngine
                 // lower left corner y coordinate
                 float imageY = ctmNew.getTranslateY();
 
-                // Save image
-
-                BufferedImage bufferedImage = image.getImage();
+                // Save image: convert to compressed byte array
                 byte[] bytes = convertImageToByteArray(image); // Convert image to byte array
 
                 // page height is from top to bottom, so we need to convert the y coordinate
@@ -195,11 +195,60 @@ public class PDFImageProcessEngine extends PDFStreamEngine
                 textX <= imageLeft + imageWidth + horizontalTolerance;
     }
 
+    private static final int MAX_IMAGE_DIMENSION = 1920;
+    private static final float JPEG_QUALITY = 0.75f;
+
     private static byte[] convertImageToByteArray(PDImageXObject image) throws IOException {
+        BufferedImage original = image.getImage();
+        int origWidth = original.getWidth();
+        int origHeight = original.getHeight();
+        BufferedImage processed = compressImage(original);
+        // Flush original to free native memory if it's not the same object as processed
+        if (original != processed) {
+            original.flush();
+        }
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        ImageIO.write(image.getImage(), "png", baos); // Write the image to the ByteArrayOutputStream
-        baos.flush(); // Ensure all data is written
-        return baos.toByteArray(); // Convert to byte array
+        ImageIO.write(processed, "jpg", baos);
+        baos.flush();
+        byte[] result = baos.toByteArray();
+        int procWidth = processed.getWidth();
+        int procHeight = processed.getHeight();
+        // Flush processed image to free native memory
+        processed.flush();
+        logger.info("Image compressed: {}x{} -> {}x{}, {} bytes",
+                origWidth, origHeight, procWidth, procHeight, result.length);
+        return result;
+    }
+
+    private static BufferedImage compressImage(BufferedImage image) {
+        int width = image.getWidth();
+        int height = image.getHeight();
+
+        // Scale down if too large
+        if (width > MAX_IMAGE_DIMENSION || height > MAX_IMAGE_DIMENSION) {
+            double scale = Math.min(
+                    (double) MAX_IMAGE_DIMENSION / width,
+                    (double) MAX_IMAGE_DIMENSION / height);
+            int newWidth = (int) (width * scale);
+            int newHeight = (int) (height * scale);
+            BufferedImage resized = new BufferedImage(newWidth, newHeight, BufferedImage.TYPE_INT_RGB);
+            Graphics2D g = resized.createGraphics();
+            g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+            g.drawImage(image, 0, 0, newWidth, newHeight, null);
+            g.dispose();
+            return resized;
+        }
+
+        // Convert to RGB for JPEG encoding if needed
+        if (image.getType() != BufferedImage.TYPE_INT_RGB) {
+            BufferedImage rgb = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
+            Graphics2D g = rgb.createGraphics();
+            g.drawImage(image, 0, 0, null);
+            g.dispose();
+            return rgb;
+        }
+
+        return image;
     }
 
 }

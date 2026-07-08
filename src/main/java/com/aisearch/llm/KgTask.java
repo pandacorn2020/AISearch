@@ -97,6 +97,10 @@ public class KgTask implements Callable<String> {
             this.text = response.aiMessage().text();
             return text;
         } catch (Throwable t) {
+            logger.error("知识图谱任务执行失败。systemPrompt前100字: {}, userPrompt前100字: {}",
+                ragKgSystemPrompt == null ? "null" : ragKgSystemPrompt.substring(0, Math.min(100, ragKgSystemPrompt.length())),
+                segment == null ? "null" : segment.text().substring(0, Math.min(100, segment.text().length())),
+                t);
             return null;
         }
     }

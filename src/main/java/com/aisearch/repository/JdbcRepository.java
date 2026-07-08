@@ -410,11 +410,9 @@ public class JdbcRepository {
 
     public void saveImages(String schema, List<KGImage> images) {
         String sql = String.format("INSERT INTO %s.kgimage (content, description) VALUES (?, ?)", schema);
-        List<Object[]> batchArgs = new ArrayList<>();
         for (KGImage image : images) {
-            batchArgs.add(new Object[]{image.getContent(), image.getDescription()});
+            jdbcTemplate.update(sql, image.getContent(), image.getDescription());
         }
-        jdbcTemplate.batchUpdate(sql, batchArgs);
     }
 
     public static final String SCORE_COLUMN = "__SCORE__";

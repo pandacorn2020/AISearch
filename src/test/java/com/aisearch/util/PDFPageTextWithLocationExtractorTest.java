@@ -1,4 +1,5 @@
 package com.aisearch.util;
+import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.junit.jupiter.api.Test;
 
@@ -13,7 +14,7 @@ class PDFPageTextWithLocationExtractorTest {
     void testGetContent() throws IOException {
         // Arrange: Load a sample PDF file
         File pdfFile = new File("/input/现代舰船.pdf");
-        try (PDDocument document = PDDocument.load(pdfFile)) {
+        try (PDDocument document = Loader.loadPDF(pdfFile)) {
             PDFPageTextWithLocationExtractor extractor = new PDFPageTextWithLocationExtractor();
 
             int numberOfPages = document.getNumberOfPages();
