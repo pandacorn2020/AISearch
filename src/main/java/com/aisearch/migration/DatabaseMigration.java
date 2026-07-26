@@ -62,6 +62,20 @@ public class DatabaseMigration {
         "KGFILE", "KGCOMMUNITY", "KGENTITY", "KGSEGMENT", "KGRELATIONSHIP", "KGIMAGE"
     };
 
+    // aiask* schema 建表后需要创建的索引
+    private static final String[] AIASK_CREATE_INDEX_DDLS = {
+        "create vector index on KGCOMMUNITY (summary)",
+        "create index index_KGEntity_name on KGENTITY (name)",
+        "create vector index on KGENTITY (name)",
+        "create text index text_index_kgentity_name on KGENTITY (name)",
+        "create vector index on KGSEGMENT (segment)",
+        "create text index text_index_kgsegment_segment on KGSEGMENT (segment)",
+        "create index index_KGRelationship_source on KGRELATIONSHIP (source)",
+        "create index index_KGRelationship_target on KGRELATIONSHIP (target)",
+        "create vector index on KGIMAGE (description)",
+        "create text index text_index_kgimage_description on KGIMAGE (description)"
+    };
+
     // ======================== aisearch_manager schema 建表 DDL ========================
     private static final String[] MANAGER_CREATE_TABLE_DDLS = {
         "CREATE TABLE build_task_status (" +
@@ -199,6 +213,16 @@ public class DatabaseMigration {
                 System.out.println("  " + table + ": " + rows + " 行");
             } catch (SQLException e) {
                 System.err.println("  [ERROR] " + table + ": " + e.getMessage());
+            }
+        }
+
+        // 创建索引（跳过不存在的表对应的索引）
+        for (String idx : AIASK_CREATE_INDEX_DDLS) {
+            try (Statement s = localConn.createStatement()) {
+                s.executeUpdate("USE `" + schema + "`");
+                s.executeUpdate(idx);
+            } catch (SQLException e) {
+                System.err.println("  [WARN] 索引: " + e.getMessage());
             }
         }
 

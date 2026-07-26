@@ -16,7 +16,10 @@ import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.core.io.ClassPathResource;
 import org.apache.tika.Tika;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -28,6 +31,8 @@ import java.util.List;
 import java.util.Map;
 
 public class FileConverter {
+
+    private static final Logger log = LoggerFactory.getLogger(FileConverter.class);
 
     public static Path getResourcePath(String resourceFileName) throws IOException {
         ClassPathResource resource = new ClassPathResource(resourceFileName);
@@ -49,15 +54,40 @@ public class FileConverter {
     }
 
     public static String convertWordToText(InputStream inputStream, String fileName) throws IOException {
+        // 先缓冲到内存，以便在 .doc/.docx 格式间降级重试
+        byte[] data = inputStream.readAllBytes();
+
         if (fileName.endsWith(".doc")) {
-            try (HWPFDocument document = new HWPFDocument(inputStream)) {
+            try (HWPFDocument document = new HWPFDocument(new ByteArrayInputStream(data))) {
                 WordExtractor extractor = new WordExtractor(document);
                 return extractor.getText();
+            } catch (Exception e1) {
+                // 可能是 .docx 重命名为 .doc，尝试 .docx 格式
+                try (XWPFDocument document = new XWPFDocument(new ByteArrayInputStream(data))) {
+                    XWPFWordExtractor extractor = new XWPFWordExtractor(document);
+                    return extractor.getText();
+                } catch (Exception e2) {
+                    // 两种格式都失败，降级使用 Tika 自动检测真实格式
+                    log.warn("文件 {} 作为 .doc(HWPF) 和 .docx(XWPF) 均解析失败，降级 Tika 检测。POI 异常: HWPF={}, XWPF={}",
+                            fileName, e1.getMessage(), e2.getMessage());
+                    return tikaConvertWordToText(new ByteArrayInputStream(data), fileName);
+                }
             }
         } else if (fileName.endsWith(".docx")) {
-            try (XWPFDocument document = new XWPFDocument(inputStream)) {
+            try (XWPFDocument document = new XWPFDocument(new ByteArrayInputStream(data))) {
                 XWPFWordExtractor extractor = new XWPFWordExtractor(document);
                 return extractor.getText();
+            } catch (Exception e1) {
+                // 可能是旧格式 .doc 重命名为 .docx（二进制 OLE2，非 ZIP），降级尝试
+                try (HWPFDocument document = new HWPFDocument(new ByteArrayInputStream(data))) {
+                    WordExtractor extractor = new WordExtractor(document);
+                    return extractor.getText();
+                } catch (Exception e2) {
+                    // 两种格式都失败，降级使用 Tika 自动检测真实格式
+                    log.warn("文件 {} 作为 .docx(XWPF) 和 .doc(HWPF) 均解析失败，降级 Tika 检测。POI 异常: XWPF={}, HWPF={}",
+                            fileName, e1.getMessage(), e2.getMessage());
+                    return tikaConvertWordToText(new ByteArrayInputStream(data), fileName);
+                }
             }
         } else {
             throw new IllegalArgumentException("The specified file is not a Word document");
@@ -67,10 +97,14 @@ public class FileConverter {
     public static String tikaConvertWordToText(InputStream inputStream, String fileName) throws IOException {
         try {
             Tika tika = new Tika();
+            // 先缓冲数据用于类型检测
+            byte[] data = inputStream.readAllBytes();
+            String detectedType = tika.detect(data, fileName);
+            log.info("Tika 兜底解析文件: {}，检测到实际格式: {}", fileName, detectedType);
             // 提取文本
-            return tika.parseToString(inputStream);
+            return tika.parseToString(new ByteArrayInputStream(data));
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("Tika 兜底解析失败: {}", fileName, e);
             return null;
         }
     }

@@ -3,7 +3,10 @@ package com.aisearch.repository;
 import com.aisearch.entity.*;
 import com.aisearch.util.TextSimilarity;
 import org.jetbrains.annotations.NotNull;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Repository;
@@ -17,6 +20,8 @@ import java.util.stream.Collectors;
 @Repository
 @Transactional
 public class JdbcRepository {
+
+    private static final Logger logger = LoggerFactory.getLogger(JdbcRepository.class);
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
@@ -308,8 +313,11 @@ public class JdbcRepository {
         try {
             String sql = String.format("SELECT name FROM %s.kgfile WHERE name = ?", schema);
             return jdbcTemplate.queryForObject(sql, String.class, name);
-        } catch (Exception e) {
+        } catch (EmptyResultDataAccessException e) {
             return null;
+        } catch (Exception e) {
+            logger.error("查询kgfile失败: schema={}, name={}", schema, name, e);
+            throw new RuntimeException("查询kgfile失败: schema=" + schema + ", name=" + name, e);
         }
     }
 
@@ -317,8 +325,11 @@ public class JdbcRepository {
         try {
             String sql = String.format("SELECT * FROM %s.kgentity WHERE name = ?", schema);
             return jdbcTemplate.queryForObject(sql, noScoreKgEntityRowMapper, id);
-        } catch (Exception e) {
+        } catch (EmptyResultDataAccessException e) {
             return null;
+        } catch (Exception e) {
+            logger.error("查询kgentity失败: schema={}, name={}", schema, id, e);
+            throw new RuntimeException("查询kgentity失败: schema=" + schema + ", name=" + id, e);
         }
     }
 
@@ -326,8 +337,11 @@ public class JdbcRepository {
         try {
             String sql = String.format("SELECT * FROM %s.kgimage WHERE id = ?", schema);
             return jdbcTemplate.queryForObject(sql, noScoreKgImageRowMapper, id);
-        } catch (Exception e) {
+        } catch (EmptyResultDataAccessException e) {
             return null;
+        } catch (Exception e) {
+            logger.error("查询kgimage失败: schema={}, id={}", schema, id, e);
+            throw new RuntimeException("查询kgimage失败: schema=" + schema + ", id=" + id, e);
         }
     }
 
@@ -394,8 +408,12 @@ public class JdbcRepository {
             String sql = String.format("SELECT * FROM %s.kgrelationship WHERE source = ? AND target = ? AND relation = ?",
                     schema);
             return jdbcTemplate.queryForObject(sql, kgRelationshipRowMapper, id.getSource(), id.getTarget(), id.getRelation());
-        } catch (Exception e) {
+        } catch (EmptyResultDataAccessException e) {
             return null;
+        } catch (Exception e) {
+            logger.error("查询kgrelationship失败: schema={}, source={}, target={}, relation={}",
+                    schema, id.getSource(), id.getTarget(), id.getRelation(), e);
+            throw new RuntimeException("查询kgrelationship失败: schema=" + schema + ", key=" + id, e);
         }
     }
 

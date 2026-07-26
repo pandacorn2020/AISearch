@@ -22,7 +22,7 @@ public class FileService {
                 return FileConverter.convertFileToText(inputStream, description);
             }
         } catch (Exception e) {
-            throw new RuntimeException("Error processing PDF file: " + e.getMessage(), e);
+            throw new RuntimeException("Error processing file: " + description + " - " + e.getMessage(), e);
         }
     }
 }
