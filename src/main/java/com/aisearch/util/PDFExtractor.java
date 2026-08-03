@@ -36,6 +36,9 @@ public class PDFExtractor {
 
     private static final String DEFAULT_OCR_MODEL = "qwen2.5-vl-7b-instruct";
 
+    /** 阿里云文档智能 OCR 模式标识 */
+    private static final String OCR_MODE_ALI_DOC = "aliDoc";
+
     private JdbcRepository jdbcRepository;
     private String schema;
 
@@ -57,6 +60,11 @@ public class PDFExtractor {
     }
 
     public String extract(InputStream inputStream) throws IOException {
+        // aliDoc 模式：使用阿里云文档智能 API 提取
+        if (OCR_MODE_ALI_DOC.equalsIgnoreCase(kgProperties != null ? kgProperties.getOcrMode() : null)) {
+            return extractByAliDoc(inputStream);
+        }
+
         List<String> pageTexts = new ArrayList<>();
         byte[] pdfBytes = inputStream.readAllBytes();
         try (PDDocument document = Loader.loadPDF(pdfBytes)) {
@@ -157,6 +165,30 @@ public class PDFExtractor {
         logger.info("乱码检测：总字符数={}, 中文字符数={}, 中文占比={}",
             all.length(), chineseCount, String.format("%.2f%%", ratio * 100));
         return ratio < 0.05;
+    }
+
+    /**
+     * 使用阿里云文档智能 API 提取 PDF 文本。
+     * 将整个 PDF 字节流传给阿里云 DocMind，获取结构化 Markdown 结果。
+     */
+    private String extractByAliDoc(InputStream inputStream) throws IOException {
+        logger.info("使用阿里云文档智能（aliDoc）模式提取 PDF，schema={}", schema);
+        try {
+            byte[] pdfBytes = inputStream.readAllBytes();
+            AliyunDocExtractor aliExtractor = new AliyunDocExtractor(kgProperties);
+            String result = aliExtractor.extract(pdfBytes, schema + ".pdf");
+            if (result == null || result.trim().isEmpty()) {
+                logger.warn("阿里云文档智能返回空内容，schema={}", schema);
+                return "";
+            }
+            logger.info("阿里云文档智能提取完成，schema={}, 文本长度={}", schema, result.length());
+            return result;
+        } catch (IOException e) {
+            throw e;
+        } catch (Exception e) {
+            logger.error("阿里云文档智能提取失败，schema={}", schema, e);
+            throw new IOException("阿里云文档智能提取失败: " + e.getMessage(), e);
+        }
     }
 
     private List<String> extractByOcr(PDDocument document) {

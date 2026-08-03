@@ -21,6 +21,18 @@ public class KgProperties {
 
     private String ocrPrompt;
 
+    /** OCR 模式：bigModel（大模型 OCR，默认） / aliDoc（阿里云文档智能） */
+    private String ocrMode;
+
+    /** 阿里云文档智能 AccessKey */
+    private String aliDocAccessKey;
+
+    /** 阿里云文档智能 SecretKey */
+    private String aliDocSecretKey;
+
+    /** 阿里云文档智能 Endpoint，默认 docmind-api.cn-hangzhou.aliyuncs.com */
+    private String aliDocEndpoint;
+
     private Integer taskTimeoutSeconds;
 
     private Integer taskHeartbeatIntervalMs;
@@ -86,6 +98,44 @@ public class KgProperties {
 
     public void setOcrPrompt(String ocrPrompt) {
         this.ocrPrompt = ocrPrompt;
+    }
+
+    public String getOcrMode() {
+        if (ocrMode == null || ocrMode.trim().isEmpty()) {
+            return "bigModel";
+        }
+        return ocrMode.trim();
+    }
+
+    public void setOcrMode(String ocrMode) {
+        this.ocrMode = ocrMode;
+    }
+
+    public String getAliDocAccessKey() {
+        return aliDocAccessKey;
+    }
+
+    public void setAliDocAccessKey(String aliDocAccessKey) {
+        this.aliDocAccessKey = aliDocAccessKey;
+    }
+
+    public String getAliDocSecretKey() {
+        return aliDocSecretKey;
+    }
+
+    public void setAliDocSecretKey(String aliDocSecretKey) {
+        this.aliDocSecretKey = aliDocSecretKey;
+    }
+
+    public String getAliDocEndpoint() {
+        if (aliDocEndpoint == null || aliDocEndpoint.trim().isEmpty()) {
+            return "docmind-api.cn-hangzhou.aliyuncs.com";
+        }
+        return aliDocEndpoint.trim();
+    }
+
+    public void setAliDocEndpoint(String aliDocEndpoint) {
+        this.aliDocEndpoint = aliDocEndpoint;
     }
 
     public Integer getTaskTimeoutSeconds() {

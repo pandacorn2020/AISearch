@@ -9,10 +9,10 @@ Content-Disposition: form-data; name="schema"
 aiask_test_schema
 
 ------WebKitFormBoundary7MA4YWxkTrZu0gW
-Content-Disposition: form-data; name="file"; filename="1.docx"
+Content-Disposition: form-data; name="file"; filename="陈勇实用验方选.pdf"
 Content-Type: application/octet-stream
 
-< I:\aisearch\release_0623002\release_0623002\knowledge\test_speed\1.docx
+< "D:\\tmp\\aisearch\\陈勇实用验方选.pdf"
 ------WebKitFormBoundary7MA4YWxkTrZu0gW--
 // 新增一个schema参数
 
@@ -201,10 +201,10 @@ Content-Disposition: form-data; name="schema"
 aiask_test_schema
 
 ------WebKitFormBoundary7MA4YWxkTrZu0gW
-Content-Disposition: form-data; name="file"; filename="3.docx"
+Content-Disposition: form-data; name="file"; filename="陈勇实用验方选.pdf"
 Content-Type: application/octet-stream
 
-< I:\aisearch\release_0623002\release_0623002\knowledge\test_speed\3.docx
+< "D:\\tmp\\aisearch\\陈勇实用验方选.pdf"
 ------WebKitFormBoundary7MA4YWxkTrZu0gW--
 // 新增一个schema参数
 

@@ -27,15 +27,16 @@ public class PDFExtractorTest {
         PDFExtractor pdfExtractor = new PDFExtractor(mockJdbcRepository,Schemas.DOCS);
 
         // Provide a sample PDF file as input
-        InputStream inputStream = Files.newInputStream(Paths.get("I:\\aisearch\\release_0623002\\release_0623002\\knowledge\\hanyunleyang\\lunwen\\焦树德临证百案按_test.pdf"));
+        InputStream inputStream = Files.newInputStream(Paths.get("D:\\\\tmp\\\\aisearch\\\\陈勇实用验方选.pdf"));
 
         // Call the extract method
         String extractedContent = pdfExtractor.extract(inputStream);
 
-        inputStream = Files.newInputStream(Paths.get("I:\\aisearch\\release_0623002\\release_0623002\\knowledge\\hanyunleyang\\lunwen\\焦树德临证百案按_test.pdf"));
+        inputStream = Files.newInputStream(Paths.get("D:\\\\tmp\\\\aisearch\\\\陈勇实用验方选.pdf"));
         PDFTextStripper stripper = new PDFTextStripper();
         PDDocument document = Loader.loadPDF(inputStream.readAllBytes());
         String pageText = stripper.getText(document);
+        inputStream.close();
         System.out.println("Extracted page text: " + pageText);
 
         // Assert that the extracted content is not null or empty
